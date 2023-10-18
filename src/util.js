@@ -40,6 +40,24 @@ export function getKeypointIndexBySide() {
   };
 }
 
+// hip, knee, ankle, heel, toe
+export function legs() {
+  return {
+    left: [23, 25, 27, 29, 31],
+    right: [24, 26, 28, 30, 32],
+  };
+}
+
+export function angle(p0, p1) {
+  var dy = p1.y - p0.y;
+  var dx = p1.x - p0.x;
+  var theta = Math.atan2(dy, dx); // (-PI, PI]
+  theta *= 180 / Math.PI; // (-180, 180]
+  if (theta < 0) {
+    theta += 360; // [0, 360)
+  }
+  return theta;
+}
 
 /**
  * Reset the target backend.
@@ -116,3 +134,45 @@ export async function setBackendAndEnvFlags(flagConfig, backend) {
     await resetBackend($backend);
   }
 }
+
+export const I = {
+  NOSE: 0,
+  LEFT_EYE_INNER: 1,
+  LEFT_EYE: 2,
+  LEFT_EYE_OUTER: 3,
+  RIGHT_EYE_INNER: 4,
+  RIGHT_EYE: 5,
+  RIGHT_EYE_OUTER: 6,
+  LEFT_EAR: 7,
+  RIGHT_EAR: 8,
+  MOUTH_LEFT: 9,
+  MOUTH_RIGHT: 10,
+  LEFT_SHOULDER: 11,
+  RIGHT_SHOULDER: 12,
+  LEFT_ELBOW: 13,
+  RIGHT_ELBOW: 14,
+  LEFT_WRIST: 15,
+  RIGHT_WRIST: 16,
+  LEFT_PINKY: 17,
+  RIGHT_PINKY: 18,
+  LEFT_INDEX: 19,
+  RIGHT_INDEX: 20,
+  LEFT_THUMB: 21,
+  RIGHT_THUMB: 22,
+  LEFT_HIP: 23,
+  RIGHT_HIP: 24,
+  LEFT_KNEE: 25,
+  RIGHT_KNEE: 26,
+  LEFT_ANKLE: 27,
+  RIGHT_ANKLE: 28,
+  LEFT_HEEL: 29,
+  RIGHT_HEEL: 30,
+  LEFT_FOOT_INDEX: 31,
+  RIGHT_FOOT_INDEX: 32,
+  BODYCENTER: 33,
+  FOREHEAD: 34,
+  LEFTTHUMB: 35,
+  LEFTHAND: 36,
+  RIGHTTHUMB: 37,
+  RIGHTHAND: 38,
+};
