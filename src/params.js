@@ -27,9 +27,9 @@ export const VIDEO_SIZE = {
 };
 export const BLAZEPOSE_CONFIG = {
   maxPoses: 1,
-  type: 'heavy',
+  type: 'full',
   scoreThreshold: 0.65,
-  render3D: true
+  render3D: false
 };
 export const STATE = {
   camera: {targetFPS: 60, sizeOption: '640 X 480'},

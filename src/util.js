@@ -41,10 +41,22 @@ export function getKeypointIndexBySide() {
 }
 
 // hip, knee, ankle, heel, toe
-export function legs() {
+export function leg_indx() {
   return {
-    left: [23, 25, 27, 29, 31],
-    right: [24, 26, 28, 30, 32],
+    left: {
+      hip: 23,
+      knee: 25,
+      ankle: 27,
+      heel: 29,
+      toe: 31
+    },
+    right: {
+      hip: 24,
+      knee: 26,
+      ankle: 28,
+      heel: 30,
+      toe: 32
+    }
   };
 }
 
