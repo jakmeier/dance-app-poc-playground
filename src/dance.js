@@ -1,4 +1,6 @@
 import { BodyPosition, Move } from './moves';
+import { leg_indx } from './util';
+import { Chart } from 'chart.js/auto';
 
 export class Tracker {
     constructor() {
@@ -13,10 +15,32 @@ export class Tracker {
         setTimeout(() => metronome(90, 10, this), 3000);
     }
 
-    track(bodyPos, timestamp) {
+    track(keypoints, timestamp) {
+        const bodyPos = BodyPosition.fromKeypoints(keypoints);
+        let movement = null;
+        if (this.history.length > 0) {
+            const timeDelta = (timestamp - this.history[this.history.length - 1].timestamp) / 1000;
+            const prev = this.history[this.history.length - 1].keypoints;
+            movement = keypoints.map((now, i) => pointDistance(now, prev[i]) / timeDelta);
+            // console.log(`movements recorded`, movement);
+            console.log(`movement right foot`, movement[leg_indx().right.ankle], timeDelta);
+        }
         this.left.track(bodyPos.leftThigh);
         this.right.track(bodyPos.rightThigh);
-        this.history.push({ timestamp, bodyPos });
+        this.history.push({ timestamp, bodyPos, movement, keypoints });
+
+        const chartedIndices = [23, 25, 27, 29, 31, 24, 26, 28, 30, 32];
+        const chartableKeypoints = chartedIndices.map((i) => keypoints[i]);
+        if (!this.chart) {
+            this.chart = createChart(chartableKeypoints);
+        }
+        if (movement) {
+            this.chart.data.labels.push(timestamp);
+            for (const i in chartedIndices) {
+                this.chart.data.datasets[i].data.push(movement[chartedIndices[i]]);
+            }
+            this.chart.update();
+        }
     }
 
     beat(scheduledTime) {
@@ -28,7 +52,11 @@ export class Tracker {
                 let err = this.move.errorScore(frame.bodyPos, this.moveIndex);
                 let diff = this.move.diff(frame.bodyPos, this.moveIndex);
                 console.log(`time diff is ${frame.timestamp - scheduledTime}`);
-                console.log(`error is ${err} and diff is`, diff);
+                console.log(`error is ${err}, diff is`, diff);
+                if (frame.movement) {
+                    // console.log(`movements are`, frame.movement);
+                    console.log(`recorded right foot`, frame.movement[leg_indx().right.ankle]);
+                }
                 console.log(frame.bodyPos);
                 break;
             }
@@ -90,6 +118,10 @@ function updateTime(time) {
     return timeElapsed;
 }
 
+function pointDistance(p0, p1) {
+    return Math.hypot(p0.x - p1.x, p0.y - p1.y);
+}
+
 var playSound = () => { };
 var metronome = (_bpm, _seconds, _tracker) => { };
 const context = new AudioContext();
@@ -133,3 +165,31 @@ function onError(e) {
 
 
 loadSound(require('url:../beep.mp3'));
+
+
+
+//*  charting  **/
+
+function createChart(keypoints) {
+    const chartCanvas = document.getElementById('chart');
+
+    return new Chart(chartCanvas, {
+        type: 'line',
+        data: {
+            labels: ['init'],
+            datasets: keypoints.map((p) => ({ label: p.name, data: [100] }))
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: true,
+                    text: 'Chart.js Line Chart'
+                }
+            }
+        }
+    });
+}

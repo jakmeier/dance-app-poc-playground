@@ -71,11 +71,7 @@ function analyzePose(pose, timestamp) {
         || p[legs.right.knee].score < scoreThreshold
     ) { return }
 
-    const bodyPos = BodyPosition.fromKeypoints(pose.keypoints);
-    // bodyPos.hip = p[legs.right.hip];
-    // bodyPos.knee = p[legs.right.knee];
-    bodyPos.debug = pose.keypoints;
-    danceTacker.track(bodyPos, timestamp);
+    danceTacker.track(pose.keypoints, timestamp);
 }
 
 async function pose() {
