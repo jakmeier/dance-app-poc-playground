@@ -1,12 +1,46 @@
+import { BodyPosition, Move } from './moves';
+
 export class Tracker {
     constructor() {
         this.left = new Leg("left");
         this.right = new Leg("right");
+        this.move = Move.RunningMan();
+        // this.move = Move.StandingStraight();
+        this.moveIndex = 0;
+        this.history = [];
+
+        playSound();
+        setTimeout(() => metronome(90, 10, this), 3000);
     }
 
-    track(leftAngle, rightAngle) {
-        this.left.track(leftAngle);
-        this.right.track(rightAngle);
+    track(bodyPos, timestamp) {
+        this.left.track(bodyPos.leftThigh);
+        this.right.track(bodyPos.rightThigh);
+        this.history.push({ timestamp, bodyPos });
+    }
+
+    beat(scheduledTime) {
+        let oldCount = 0;
+        for (const frame of this.history) {
+            oldCount += 1;
+            if (frame.timestamp >= scheduledTime) {
+                // console.log(`${frame.timestamp} and ${scheduledTime}`);
+                let err = this.move.errorScore(frame.bodyPos, this.moveIndex);
+                let diff = this.move.diff(frame.bodyPos, this.moveIndex);
+                console.log(`time diff is ${frame.timestamp - scheduledTime}`);
+                console.log(`error is ${err} and diff is`, diff);
+                console.log(frame.bodyPos);
+                break;
+            }
+        }
+        if (oldCount > 0) {
+            this.history = this.history.slice(oldCount);
+            // this.history = [];
+        } else if (this.history.length > 0) {
+            console.warn(`no frame available for ${scheduledTime}, latest was ${this.history[0].timestamp}`);
+
+        }
+        this.moveIndex += 1;
     }
 }
 
@@ -38,15 +72,12 @@ export class Leg {
 
     isSignificantChange(newAngle) {
         const significance = Math.abs(this.currentAngle - newAngle);
-        if (significance > 10 && this.name === "right") {
-            playSound();
-        }
         return significance > 5;
     }
 
     track(newAngle) {
         if (this.isSignificantChange(newAngle)) {
-            this.checkForDirectionChange(newAngle);
+            // this.checkForDirectionChange(newAngle);
             this.update(newAngle);
         }
     }
@@ -60,6 +91,7 @@ function updateTime(time) {
 }
 
 var playSound = () => { };
+var metronome = (_bpm, _seconds, _tracker) => { };
 const context = new AudioContext();
 
 function loadSound(url) {
@@ -72,6 +104,21 @@ function loadSound(url) {
                 source.buffer = decodedAudio;
                 source.connect(context.destination);
                 source.start();
+            }
+            metronome = (bpm, seconds, tracker) => {
+                const dt = 60 / bpm;
+                // in seconds, usually zero
+                const startAudioTime = context.currentTime;
+                // the time now in ms, for syncing with camera
+                const startAbsoluteTime = new Date().getTime();
+                for (let i = 0; i * dt < seconds; i++) {
+                    const source = context.createBufferSource();
+                    source.buffer = decodedAudio;
+                    source.connect(context.destination);
+                    const delay = i * dt;
+                    source.onended = () => { tracker.beat(startAbsoluteTime + delay * 1000); };
+                    source.start(startAudioTime + delay);
+                }
             }
         }).catch(onError)
 

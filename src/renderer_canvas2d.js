@@ -18,7 +18,7 @@ import * as posedetection from '@tensorflow-models/pose-detection';
 import * as scatter from 'scatter-gl';
 
 import * as params from './params';
-import { getKeypointIndexBySide } from './util';
+import { angleToYAxis, getKeypointIndexBySide } from './util';
 
 // These anchor points allow the pose pointcloud to resize according to its
 // position in the input.
@@ -189,6 +189,10 @@ export class RendererCanvas2d {
         this.ctx.moveTo(kp1.x, kp1.y);
         this.ctx.lineTo(kp2.x, kp2.y);
         this.ctx.stroke();
+
+        const alpha = Math.round(angleToYAxis(kp1,kp2));
+        this.ctx.font = "20px serif";
+        this.ctx.fillText(`${alpha}`, (kp1.x + kp2.x) / 2, (kp1.y + kp2.y) / 2);
       }
     });
   }

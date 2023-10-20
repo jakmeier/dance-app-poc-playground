@@ -60,14 +60,14 @@ export function leg_indx() {
   };
 }
 
-export function angle(p0, p1) {
+export function angleToYAxis(p0, p1) {
+  // flip y-order to go from right-handed to left-handed coordinate system
+  // (y grows upwards afterwards)
+  // var dy = p0.y - p1.y;
   var dy = p1.y - p0.y;
   var dx = p1.x - p0.x;
-  var theta = Math.atan2(dy, dx); // (-PI, PI]
-  theta *= 180 / Math.PI; // (-180, 180]
-  if (theta < 0) {
-    theta += 360; // [0, 360)
-  }
+  var theta = Math.atan2(dx, dy); // [-PI, PI]
+  theta = (theta * 180) / Math.PI; // [-180, 180]
   return theta;
 }
 

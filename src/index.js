@@ -3,8 +3,9 @@ import * as mpPose from '@mediapipe/pose';
 import { STATE } from './params'
 import { Camera } from './camera'
 import { RendererCanvas2d } from './renderer_canvas2d';
-import { I, angle, leg_indx } from './util';
+import { I, leg_indx } from './util';
 import { Tracker as DanceTacker } from './dance';
+import { BodyPosition } from './moves';
 
 let camera;
 let detector;
@@ -39,11 +40,16 @@ async function loop() {
         });
     }
 
+    // TODO: should this be before or after waiting for the frame? I think
+    // before will feel more instant, but I also don't want it to be in the
+    // past. Needs practical testing.
+    const frameTimestamp = new Date().getTime();
+
     const poses = await pose();
 
     if (poses && poses.length > 0) {
         for (const pose of poses) {
-            analyzePose(pose);
+            analyzePose(pose, frameTimestamp);
         }
         renderSkeletons(poses);
     }
@@ -51,32 +57,25 @@ async function loop() {
     requestAnimationFrame(loop);
 }
 
-function analyzePose(pose) {
+function analyzePose(pose, timestamp) {
 
-    const scoreThreshold = STATE.modelConfig.scoreThreshold || 0;
+    const scoreThreshold = 0.65;// STATE.modelConfig.scoreThreshold || 0;
 
 
     const p = pose.keypoints;
     const legs = leg_indx();
     if (
         p[legs.left.hip].score < scoreThreshold
-        || p[legs.left.knee] < scoreThreshold
-        || p[legs.left.hip] < scoreThreshold
-        || p[legs.right.knee] < scoreThreshold
+        || p[legs.left.knee].score < scoreThreshold
+        || p[legs.left.hip].score < scoreThreshold
+        || p[legs.right.knee].score < scoreThreshold
     ) { return }
 
-    const left_leg_angle = angle(p[legs.left.hip], p[legs.left.knee]);
-    const right_leg_angle = angle(p[legs.left.hip], p[legs.right.knee]);
-
-    danceTacker.track(left_leg_angle, right_leg_angle);
-
-    // const diff_legs_angle = left_leg_angle - right_leg_angle;
-
-    // console.log({
-    //     left_leg_angle,
-    //     right_leg_angle,
-    //     diff_legs_angle,
-    // });
+    const bodyPos = BodyPosition.fromKeypoints(pose.keypoints);
+    // bodyPos.hip = p[legs.right.hip];
+    // bodyPos.knee = p[legs.right.knee];
+    bodyPos.debug = pose.keypoints;
+    danceTacker.track(bodyPos, timestamp);
 }
 
 async function pose() {
