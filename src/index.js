@@ -40,26 +40,38 @@ async function loop() {
         });
     }
 
-    // TODO: should this be before or after waiting for the frame? I think
-    // before will feel more instant, but I also don't want it to be in the
-    // past. Needs practical testing.
-    const frameTimestamp = new Date().getTime();
-
-    const poses = await pose();
-
-    if (poses && poses.length > 0) {
-        for (const pose of poses) {
-            analyzePose(pose, frameTimestamp);
-        }
-        renderSkeletons(poses);
-    }
-
+    // start next frame already, don't wait for calculations
     requestAnimationFrame(loop);
+
+    const frameTimestamp = new Date().getTime();
+    // fix frame to allow async computations (or even put it in a web worker thread)
+    const image = camera.captureFrame();
+
+    // blocks animation frame
+    // const poses = await pose(image);
+    // if (poses && poses.length > 0) {
+    //     for (const pose of poses) {
+    //         analyzePose(pose, frameTimestamp);
+    //     }
+    //     renderSkeletons(poses);
+    // }
+
+    // releases animation frame
+    pose(image).then(
+        (poses) => {
+            if (poses && poses.length > 0) {
+                for (const pose of poses) {
+                    analyzePose(pose, frameTimestamp);
+                }
+                renderSkeletons(poses);
+            }
+        }
+    );
 }
 
 function analyzePose(pose, timestamp) {
 
-    const scoreThreshold = 0.65;// STATE.modelConfig.scoreThreshold || 0;
+    const scoreThreshold = STATE.modelConfig.scoreThreshold || 0;
 
 
     const p = pose.keypoints;
@@ -69,12 +81,14 @@ function analyzePose(pose, timestamp) {
         || p[legs.left.knee].score < scoreThreshold
         || p[legs.left.hip].score < scoreThreshold
         || p[legs.right.knee].score < scoreThreshold
+        || p[legs.left.ankle].score < scoreThreshold
+        || p[legs.right.ankle].score < scoreThreshold
     ) { return }
 
     danceTacker.track(pose.keypoints, timestamp);
 }
 
-async function pose() {
+async function pose(image) {
     // Detector can be null if initialization failed (for example when loading
     // from a URL that does not exist).
     if (detector != null) {
@@ -82,7 +96,7 @@ async function pose() {
         // contain a model that doesn't provide the expected output.
         try {
             return await detector.estimatePoses(
-                camera.video,
+                image,
                 { maxPoses: STATE.modelConfig.maxPoses, flipHorizontal: false });
 
         } catch (error) {

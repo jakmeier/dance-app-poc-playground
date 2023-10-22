@@ -15,11 +15,13 @@
  * =============================================================================
  */
 import * as params from './params';
-import {isMobile} from './util';
+import { isMobile } from './util';
 
 export class Camera {
   constructor() {
     this.video = document.getElementById('video');
+    this.hiddenCanvas = document.createElement('canvas');
+    this.hiddenCanvasContext = this.hiddenCanvas.getContext('2d');
   }
 
   /**
@@ -29,10 +31,10 @@ export class Camera {
   static async setup(cameraParam) {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       throw new Error(
-          'Browser API navigator.mediaDevices.getUserMedia not available');
+        'Browser API navigator.mediaDevices.getUserMedia not available');
     }
 
-    const {targetFPS, sizeOption} = cameraParam;
+    const { targetFPS, sizeOption } = cameraParam;
     const $size = params.VIDEO_SIZE[sizeOption];
     const videoConfig = {
       'audio': false,
@@ -42,7 +44,7 @@ export class Camera {
         // mobile devices accept the default size.
         width: isMobile() ? params.VIDEO_SIZE['360 X 270'].width : $size.width,
         height: isMobile() ? params.VIDEO_SIZE['360 X 270'].height :
-                             $size.height,
+          $size.height,
         frameRate: {
           ideal: targetFPS,
         }
@@ -67,10 +69,17 @@ export class Camera {
     // Must set below two lines, otherwise video element doesn't show.
     camera.video.width = videoWidth;
     camera.video.height = videoHeight;
+    camera.hiddenCanvas.width = videoWidth;
+    camera.hiddenCanvas.height = videoHeight;
 
     const canvasContainer = document.querySelector('.canvas-wrapper');
     canvasContainer.style = `width: ${videoWidth}px; height: ${videoHeight}px`;
 
     return camera;
+  }
+
+  captureFrame() {
+    this.hiddenCanvasContext.drawImage(this.video, 0, 0);
+    return this.hiddenCanvasContext.getImageData(0, 0, this.video.width, this.video.height);
   }
 }
