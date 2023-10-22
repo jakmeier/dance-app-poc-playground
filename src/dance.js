@@ -1,4 +1,5 @@
 import { BodyPosition, Move } from './moves';
+import { onBeatScore } from './rhythm';
 import { leg_indx } from './util';
 import { Chart } from 'chart.js/auto';
 import zoomPlugin from 'chartjs-plugin-zoom';
@@ -44,6 +45,15 @@ export class Tracker {
             }
             this.chart.update();
         }
+        if (timestamp - chartStart > 10000) {
+            const score = onBeatScore(this.history, 90);
+            console.log("rhythm score 80", onBeatScore(this.history,   80*2));
+            console.log("rhythm score 90", onBeatScore(this.history,   90*2));
+            console.log("rhythm score 100", onBeatScore(this.history, 100*2));
+            console.log("rhythm score 110", onBeatScore(this.history, 110*2));
+            console.log("rhythm score 120", onBeatScore(this.history, 120*2));
+            console.log("rhythm score 130", onBeatScore(this.history, 130*2));
+        }
     }
 
     beat(scheduledTime) {
@@ -65,11 +75,10 @@ export class Tracker {
             }
         }
         if (oldCount > 0) {
-            this.history = this.history.slice(oldCount);
+            // this.history = this.history.slice(oldCount);
             // this.history = [];
         } else if (this.history.length > 0) {
             console.warn(`no frame available for ${scheduledTime}, latest was ${this.history[0].timestamp}`);
-
         }
         this.moveIndex += 1;
     }
