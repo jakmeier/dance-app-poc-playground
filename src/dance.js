@@ -1,6 +1,7 @@
 import { BodyPosition, Move } from './moves';
 import { leg_indx } from './util';
 import { Chart } from 'chart.js/auto';
+import zoomPlugin from 'chartjs-plugin-zoom';
 
 export class Tracker {
     constructor() {
@@ -33,9 +34,11 @@ export class Tracker {
         const chartableKeypoints = chartedIndices.map((i) => keypoints[i]);
         if (!this.chart) {
             this.chart = createChart(chartableKeypoints);
+            this.chart.show(1);
+            this.chart.show(6);
         }
         if (movement) {
-            this.chart.data.labels.push(timestamp);
+            this.chart.data.labels.push((timestamp - chartStart) / 1000);
             for (const i in chartedIndices) {
                 this.chart.data.datasets[i].data.push(movement[chartedIndices[i]]);
             }
@@ -57,7 +60,7 @@ export class Tracker {
                     // console.log(`movements are`, frame.movement);
                     console.log(`recorded right foot`, frame.movement[leg_indx().right.ankle]);
                 }
-                console.log(frame.bodyPos);
+                console.log(`${oldCount} frames for beat, position now:`, frame.bodyPos);
                 break;
             }
         }
@@ -170,17 +173,24 @@ loadSound(require('url:../beep.mp3'));
 
 //*  charting  **/
 
+let chartStart;
 function createChart(keypoints) {
+    Chart.register(zoomPlugin);
     const chartCanvas = document.getElementById('chart');
-
-    return new Chart(chartCanvas, {
+    chartStart = new Date().getTime();
+    const chart = new Chart(chartCanvas, {
         type: 'line',
         data: {
-            labels: ['init'],
-            datasets: keypoints.map((p) => ({ label: p.name, data: [100] }))
+            labels: [],
+            datasets: keypoints.map((p) => ({ label: p.name, data: [] }))
         },
         options: {
             responsive: true,
+            scales: {
+                x: {
+                    type: 'linear',
+                },
+            },
             plugins: {
                 legend: {
                     position: 'top',
@@ -188,8 +198,35 @@ function createChart(keypoints) {
                 title: {
                     display: true,
                     text: 'Chart.js Line Chart'
+                },
+                zoom: {
+                    pan: {
+                        enabled: true,
+                        mode: 'x',
+                        modifierKey: 'ctrl',
+                    },
+                    zoom: {
+                        drag: {
+                            enabled: true,
+                        },
+                        mode: 'x',
+                    }
                 }
             }
         }
     });
+    for (i in keypoints) {
+        chart.hide(i);
+    }
+
+    var button2 = document.createElement("button");
+    button2.onclick = () => { playSound(); };
+    button2.innerText = "Play sound";
+    chartCanvas.insertAdjacentElement('afterend', button2);
+
+    var button = document.createElement("button");
+    button.onclick = () => { chart.resetZoom(); };
+    button.innerText = "Reset Zoom";
+    chartCanvas.insertAdjacentElement('afterend', button);
+    return chart;
 }
