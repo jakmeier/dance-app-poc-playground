@@ -16,9 +16,9 @@ export class Move {
     // The classic.
     static RunningMan() {
         return new Move()
-            .then(new BodyPosition().rightLeg(70, 100))
+            .then(new BodyPosition().rightLeg(70, 120))
             .then(new BodyPosition().rightLeg(40, 40).leftLeg(-20, 0))
-            .then(new BodyPosition().leftLeg(70, 100))
+            .then(new BodyPosition().leftLeg(70, 120))
             .then(new BodyPosition().rightLeg(-20, 0).leftLeg(40, 40))
             ;
     }
@@ -66,8 +66,8 @@ export class BodyPosition {
         const leftThigh = directionCorrection * signedPolarAngle(p[LEGS.left.hip], p[LEGS.left.knee]);
         const rightThigh = directionCorrection * signedPolarAngle(p[LEGS.right.hip], p[LEGS.right.knee]);
         // Shins are relative to thighs, at zero when stretched, positive when contracted.
-        const leftShin = leftThigh - polarAngle(p[LEGS.left.knee], p[LEGS.left.ankle]);
-        const rightShin = rightThigh - polarAngle(p[LEGS.right.knee], p[LEGS.right.ankle]);
+        const leftShin = leftThigh - directionCorrection * polarAngle(p[LEGS.left.knee], p[LEGS.left.ankle]);
+        const rightShin = rightThigh - directionCorrection * polarAngle(p[LEGS.right.knee], p[LEGS.right.ankle]);
         return new BodyPosition()
             .rightLeg(rightThigh, rightShin)
             .leftLeg(leftThigh, leftShin);
