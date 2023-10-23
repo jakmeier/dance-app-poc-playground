@@ -18,7 +18,7 @@ import * as posedetection from '@tensorflow-models/pose-detection';
 import * as scatter from 'scatter-gl';
 
 import * as params from './params';
-import { angleToYAxis, getKeypointIndexBySide } from './util';
+import { polarAngle, getKeypointIndexBySide } from './util';
 
 // These anchor points allow the pose pointcloud to resize according to its
 // position in the input.
@@ -114,7 +114,7 @@ export class RendererCanvas2d {
   drawResult(pose) {
     if (pose.keypoints != null) {
       this.drawKeypoints(pose.keypoints);
-      this.drawSkeleton(pose.keypoints, pose.id);
+      this.drawSkeleton(pose.keypoints, pose.id, pose.keypoints3D);
     }
     if (pose.keypoints3D != null && params.STATE.modelConfig.render3D) {
       this.drawKeypoints3D(pose.keypoints3D);
@@ -164,7 +164,7 @@ export class RendererCanvas2d {
    * Draw the skeleton of a body on the video.
    * @param keypoints A list of keypoints.
    */
-  drawSkeleton(keypoints, poseId) {
+  drawSkeleton(keypoints, poseId, keypoints3D) {
     // Each poseId is mapped to a color in the color palette.
     const color = params.STATE.modelConfig.enableTracking && poseId != null ?
       COLOR_PALETTE[poseId % 20] :
@@ -190,7 +190,7 @@ export class RendererCanvas2d {
         this.ctx.lineTo(kp2.x, kp2.y);
         this.ctx.stroke();
 
-        const alpha = Math.round(angleToYAxis(kp1,kp2));
+        const alpha = Math.round(polarAngle(keypoints3D[i],keypoints3D[j]));
         this.ctx.font = "20px serif";
         this.ctx.fillText(`${alpha}`, (kp1.x + kp2.x) / 2, (kp1.y + kp2.y) / 2);
       }

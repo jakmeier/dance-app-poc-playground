@@ -24,8 +24,6 @@ export class Tracker {
             const timeDelta = (timestamp - this.history[this.history.length - 1].timestamp) / 1000;
             const prev = this.history[this.history.length - 1].keypoints;
             movement = keypoints.map((now, i) => pointDistance(now, prev[i]) / timeDelta);
-            // console.log(`movements recorded`, movement);
-            console.log(`movement right foot`, movement[leg_indx().right.ankle], timeDelta);
         }
         this.left.track(bodyPos.leftThigh);
         this.right.track(bodyPos.rightThigh);
@@ -43,17 +41,29 @@ export class Tracker {
             for (const i in chartedIndices) {
                 this.chart.data.datasets[i].data.push(movement[chartedIndices[i]]);
             }
+            this.addErrorScore(chartedIndices.length, 0, bodyPos);
+            this.addErrorScore(chartedIndices.length, 1, bodyPos);
+            this.addErrorScore(chartedIndices.length, 2, bodyPos);
+            this.addErrorScore(chartedIndices.length, 3, bodyPos);
             this.chart.update();
         }
         if (timestamp - chartStart > 10000) {
             const score = onBeatScore(this.history, 90);
-            console.log("rhythm score 80", onBeatScore(this.history,   80*2));
-            console.log("rhythm score 90", onBeatScore(this.history,   90*2));
-            console.log("rhythm score 100", onBeatScore(this.history, 100*2));
-            console.log("rhythm score 110", onBeatScore(this.history, 110*2));
-            console.log("rhythm score 120", onBeatScore(this.history, 120*2));
-            console.log("rhythm score 130", onBeatScore(this.history, 130*2));
+            // console.log("rhythm score 80", onBeatScore(this.history, 80 * 2));
+            // console.log("rhythm score 90", onBeatScore(this.history, 90 * 2));
+            // console.log("rhythm score 100", onBeatScore(this.history, 100 * 2));
+            // console.log("rhythm score 110", onBeatScore(this.history, 110 * 2));
+            // console.log("rhythm score 120", onBeatScore(this.history, 120 * 2));
+            // console.log("rhythm score 130", onBeatScore(this.history, 130 * 2));
         }
+    }
+
+    addErrorScore(offset, i, bodyPos) {
+        this.chart.data.datasets[offset + 5*i].data.push(  this.move.errorScore(bodyPos, i)*1000);
+        this.chart.data.datasets[offset + 5*i+1].data.push(this.move.errorScores(bodyPos, i).leftThigh);
+        this.chart.data.datasets[offset + 5*i+2].data.push(this.move.errorScores(bodyPos, i).rightThigh);
+        this.chart.data.datasets[offset + 5*i+3].data.push(this.move.errorScores(bodyPos, i).leftShin);
+        this.chart.data.datasets[offset + 5*i+4].data.push(this.move.errorScores(bodyPos, i).rightShin);
     }
 
     beat(scheduledTime) {
@@ -64,13 +74,13 @@ export class Tracker {
                 // console.log(`${frame.timestamp} and ${scheduledTime}`);
                 let err = this.move.errorScore(frame.bodyPos, this.moveIndex);
                 let diff = this.move.diff(frame.bodyPos, this.moveIndex);
-                console.log(`time diff is ${frame.timestamp - scheduledTime}`);
-                console.log(`error is ${err}, diff is`, diff);
+                // console.log(`time diff is ${frame.timestamp - scheduledTime}`);
+                // console.log(`error is ${err}, diff is`, diff);
                 if (frame.movement) {
                     // console.log(`movements are`, frame.movement);
-                    console.log(`recorded right foot`, frame.movement[leg_indx().right.ankle]);
+                    // console.log(`recorded right foot`, frame.movement[leg_indx().right.ankle]);
                 }
-                console.log(`${oldCount} frames for beat, position now:`, frame.bodyPos);
+                // console.log(`${oldCount} frames for beat, position now:`, frame.bodyPos);
                 break;
             }
         }
@@ -192,6 +202,28 @@ function createChart(keypoints) {
         data: {
             labels: [],
             datasets: keypoints.map((p) => ({ label: p.name, data: [] }))
+                .concat([
+                    { label: 'pos0', data: [] },
+                    { label: 'pos0.leftThigh', data: [] },
+                    { label: 'pos0.rightThigh', data: [] },
+                    { label: 'pos0.leftShin', data: [] },
+                    { label: 'pos0.rightShin', data: [] },
+                    { label: 'pos1', data: [] },
+                    { label: 'pos1.leftThigh', data: [] },
+                    { label: 'pos1.rightThigh', data: [] },
+                    { label: 'pos1.leftShin', data: [] },
+                    { label: 'pos1.rightShin', data: [] },
+                    { label: 'pos2', data: [] },
+                    { label: 'pos2.leftThigh', data: [] },
+                    { label: 'pos2.rightThigh', data: [] },
+                    { label: 'pos2.leftShin', data: [] },
+                    { label: 'pos2.rightShin', data: [] },
+                    { label: 'pos3', data: [] },
+                    { label: 'pos3.leftThigh', data: [] },
+                    { label: 'pos3.rightThigh', data: [] },
+                    { label: 'pos3.leftShin', data: [] },
+                    { label: 'pos3.rightShin', data: [] }
+                ])
         },
         options: {
             responsive: true,
@@ -224,7 +256,7 @@ function createChart(keypoints) {
             }
         }
     });
-    for (i in keypoints) {
+    for (i in chart.data.datasets) {
         chart.hide(i);
     }
 

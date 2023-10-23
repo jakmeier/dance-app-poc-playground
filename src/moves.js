@@ -1,5 +1,5 @@
 import { leg_indx } from "./util";
-import { angleToYAxis } from './util';
+import { signedPolarAngle, polarAngle, azimuth } from './util';
 
 export class Move {
     constructor() {
@@ -33,6 +33,11 @@ export class Move {
         return targetPos.errorScore(pos) / 1000;
     }
 
+    errorScores(pos, i) {
+        const targetPos = this.onBeat[i % this.onBeat.length];
+        return targetPos.errorScores(pos);
+    }
+
     diff(pos, i) {
         const targetPos = this.onBeat[i % this.onBeat.length];
         return targetPos.diff(pos);
@@ -51,12 +56,18 @@ export class BodyPosition {
     }
 
     static fromKeypoints(p) {
+        // First, we need to know which direction the dancer is facing.
+        const hipAngle = azimuth(p[LEGS.left.hip], p[LEGS.right.hip]);
+        let directionCorrection = 1;
+        if (hipAngle < 45 && hipAngle > -45) {
+            directionCorrection = -1;
+        }
         // Thighs are at zero when standing straight, positive when moving forward.
-        const leftThigh = angleToYAxis(p[LEGS.left.hip], p[LEGS.left.knee]);
-        const rightThigh = angleToYAxis(p[LEGS.right.hip], p[LEGS.right.knee]);
+        const leftThigh = directionCorrection * signedPolarAngle(p[LEGS.left.hip], p[LEGS.left.knee]);
+        const rightThigh = directionCorrection * signedPolarAngle(p[LEGS.right.hip], p[LEGS.right.knee]);
         // Shins are relative to thighs, at zero when stretched, positive when contracted.
-        const leftShin = leftThigh - angleToYAxis(p[LEGS.left.knee], p[LEGS.left.ankle]);
-        const rightShin = rightThigh - angleToYAxis(p[LEGS.right.knee], p[LEGS.right.ankle]);
+        const leftShin = leftThigh - polarAngle(p[LEGS.left.knee], p[LEGS.left.ankle]);
+        const rightShin = rightThigh - polarAngle(p[LEGS.right.knee], p[LEGS.right.ankle]);
         return new BodyPosition()
             .rightLeg(rightThigh, rightShin)
             .leftLeg(leftThigh, leftShin);
@@ -79,6 +90,15 @@ export class BodyPosition {
             + Math.pow(this.rightThigh - other.rightThigh, 2)
             + Math.pow(this.leftShin - other.leftShin, 2)
             + Math.pow(this.rightShin - other.rightShin, 2);
+    }
+
+    errorScores(other) {
+        return {
+            leftThigh: Math.pow(this.leftThigh - other.leftThigh, 2),
+            rightThigh: Math.pow(this.rightThigh - other.rightThigh, 2),
+            leftShin: Math.pow(this.leftShin - other.leftShin, 2),
+            rightShin: Math.pow(this.rightShin - other.rightShin, 2)
+        };
     }
 
     diff(other) {

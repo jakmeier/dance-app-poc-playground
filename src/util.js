@@ -60,16 +60,39 @@ export function leg_indx() {
   };
 }
 
-export function angleToYAxis(p0, p1) {
-  // flip y-order to go from right-handed to left-handed coordinate system
-  // (y grows upwards afterwards)
-  // var dy = p0.y - p1.y;
-  var dy = p1.y - p0.y;
+/**
+ * The azimuth is the angle to z-axis, which goes from the camera outwards.
+ * It is between -180° and 180°, with 0° from the camera out.
+ */
+export function azimuth(p0, p1) {
+  var dz = p1.z - p0.z;
   var dx = p1.x - p0.x;
-  var theta = Math.atan2(dx, dy); // [-PI, PI]
+  var theta = Math.atan2(dx, dz); // [-PI, PI]
   theta = (theta * 180) / Math.PI; // [-180, 180]
   return theta;
 }
+
+/**
+ * The polar angle is to the y-axis, goes from the ground to the sky.
+ * It is between 0° and 180°, with 0° pointing to the ground.
+ */
+export function polarAngle(p0, p1) {
+  var dy = p1.y - p0.y;
+  var dx = p1.x - p0.x;
+  var dz = p1.z - p0.z;
+  var theta = Math.atan(Math.hypot(dx, dz) / dy); // [-PI/2, PI/2]
+  theta = ((theta * 180) / Math.PI + 180) % 180; // [0, 180]
+  return theta;
+}
+
+/**
+ * Like polar angle but goes from -180° to 180° degrees.
+ * Positive values point towards the positive x direction.
+ */
+export function signedPolarAngle(p0, p1) {
+  return polarAngle(p0, p1) * Math.sign(p1.x - p0.x);
+}
+
 
 /**
  * Reset the target backend.

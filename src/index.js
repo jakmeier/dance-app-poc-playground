@@ -74,7 +74,7 @@ function analyzePose(pose, timestamp) {
     const scoreThreshold = STATE.modelConfig.scoreThreshold || 0;
 
 
-    const p = pose.keypoints;
+    const p = pose.keypoints3D;
     const legs = leg_indx();
     if (
         p[legs.left.hip].score < scoreThreshold
@@ -85,7 +85,7 @@ function analyzePose(pose, timestamp) {
         || p[legs.right.ankle].score < scoreThreshold
     ) { return }
 
-    danceTacker.track(pose.keypoints, timestamp);
+    danceTacker.track(pose.keypoints3D, timestamp);
 }
 
 async function pose(image) {
