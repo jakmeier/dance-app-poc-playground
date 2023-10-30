@@ -3,6 +3,7 @@ import { onBeatScore } from './rhythm';
 import { leg_indx } from './util';
 import { Chart } from 'chart.js/auto';
 import zoomPlugin from 'chartjs-plugin-zoom';
+import { playBeat } from './sound';
 
 let lastUpdate = 0;
 
@@ -15,8 +16,7 @@ export class Tracker {
         this.moveIndex = 0;
         this.history = [];
 
-        playSound();
-        setTimeout(() => metronome(90, 10, this), 3000);
+        setTimeout(() => playBeat(90, 16, this), 3000);
     }
 
     track(keypoints, timestamp) {
@@ -198,54 +198,9 @@ function pointDistance(p0, p1) {
     return Math.hypot(p0.x - p1.x, p0.y - p1.y);
 }
 
-var playSound = () => { };
-var metronome = (_bpm, _seconds, _tracker) => { };
-const context = new AudioContext();
-
-function loadSound(url) {
-    fetch(url)
-        .then(data => data.arrayBuffer())
-        .then(arrayBuffer => context.decodeAudioData(arrayBuffer))
-        .then(decodedAudio => {
-            playSound = () => {
-                source = context.createBufferSource();
-                source.buffer = decodedAudio;
-                source.connect(context.destination);
-                source.start();
-            }
-            metronome = (bpm, seconds, tracker) => {
-                const dt = 60 / bpm;
-                // in seconds, usually zero
-                const startAudioTime = context.currentTime;
-                // the time now in ms, for syncing with camera
-                const startAbsoluteTime = new Date().getTime();
-                for (let i = 0; i * dt < seconds; i++) {
-                    const source = context.createBufferSource();
-                    source.buffer = decodedAudio;
-                    source.connect(context.destination);
-                    const delay = i * dt;
-                    source.onended = () => { tracker.beat(startAbsoluteTime + delay * 1000); };
-                    source.start(startAudioTime + delay);
-                }
-            }
-        }).catch(onError)
-
-    var request = new XMLHttpRequest();
-    request.open('GET', url, true);
-    request.responseType = 'arraybuffer';
-}
-
-function onError(e) {
-    console.error(e);
-}
-
 function interpolate(a, b, ratio) {
     return a * ratio + b * (1 - ratio);
 }
-
-loadSound(require('url:../beep.mp3'));
-
-
 
 //*  charting  **/
 
