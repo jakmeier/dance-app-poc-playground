@@ -4,6 +4,8 @@ import { leg_indx } from './util';
 import { Chart } from 'chart.js/auto';
 import zoomPlugin from 'chartjs-plugin-zoom';
 
+let lastUpdate = 0;
+
 export class Tracker {
     constructor() {
         this.left = new Leg("left");
@@ -47,23 +49,34 @@ export class Tracker {
             this.addErrorScore(chartedIndices.length, 3, bodyPos);
             this.chart.update();
         }
-        if (timestamp - chartStart > 10000) {
-            const score = onBeatScore(this.history, 90);
-            // console.log("rhythm score 80", onBeatScore(this.history, 80 * 2));
-            // console.log("rhythm score 90", onBeatScore(this.history, 90 * 2));
-            // console.log("rhythm score 100", onBeatScore(this.history, 100 * 2));
-            // console.log("rhythm score 110", onBeatScore(this.history, 110 * 2));
-            // console.log("rhythm score 120", onBeatScore(this.history, 120 * 2));
-            // console.log("rhythm score 130", onBeatScore(this.history, 130 * 2));
+        if (this.history.length > 100 && timestamp - lastUpdate > 1000) {
+            lastUpdate = timestamp;
+            const bpms = [80, 90, 100, 110, 120, 130];
+            for (const bpm of bpms) {
+                const score = onBeatScore(this.history, bpm);
+                console.log(`rhythm score ${bpm} ${score.score} at offset ${score.offset}`);
+            }
+            let best = { score: 99999999 };
+            for (let i = 0; i < bpms.length; i++) {
+                const bpm = bpms[i];
+                const score = this.bpmError(bpm);
+                console.log(`shape score ${bpm} ${score.score} at offset ${score.offset}`);
+                if (score.score < best.score) {
+                    score.bpm = bpm;
+                    best = score;
+                }
+            }
+            document.getElementById('bpm').innerText = best.bpm;
+            document.getElementById('score').innerText = 25 - best.score;
         }
     }
 
     addErrorScore(offset, i, bodyPos) {
-        this.chart.data.datasets[offset + 5*i].data.push(  this.move.errorScore(bodyPos, i)*1000);
-        this.chart.data.datasets[offset + 5*i+1].data.push(this.move.errorScores(bodyPos, i).leftThigh);
-        this.chart.data.datasets[offset + 5*i+2].data.push(this.move.errorScores(bodyPos, i).rightThigh);
-        this.chart.data.datasets[offset + 5*i+3].data.push(this.move.errorScores(bodyPos, i).leftShin);
-        this.chart.data.datasets[offset + 5*i+4].data.push(this.move.errorScores(bodyPos, i).rightShin);
+        this.chart.data.datasets[offset + 5 * i].data.push(this.move.errorScore(bodyPos, i) * 1000);
+        this.chart.data.datasets[offset + 5 * i + 1].data.push(this.move.errorScores(bodyPos, i).leftThigh);
+        this.chart.data.datasets[offset + 5 * i + 2].data.push(this.move.errorScores(bodyPos, i).rightThigh);
+        this.chart.data.datasets[offset + 5 * i + 3].data.push(this.move.errorScores(bodyPos, i).leftShin);
+        this.chart.data.datasets[offset + 5 * i + 4].data.push(this.move.errorScores(bodyPos, i).rightShin);
     }
 
     beat(scheduledTime) {
@@ -91,6 +104,47 @@ export class Tracker {
             console.warn(`no frame available for ${scheduledTime}, latest was ${this.history[0].timestamp}`);
         }
         this.moveIndex += 1;
+    }
+
+    // The start is estimated such that the errors is smallest.
+    bpmError(targetBpm) {
+        const samples = this.history;
+        if (samples.length == 0) {
+            return 0;
+        }
+        const beatDuration = 60_000 / targetBpm;
+        const start = samples[0].timestamp;
+
+        let best = { score: 9999999999 };
+        let i = 0;
+        while (samples[i].timestamp < start + beatDuration) {
+            let total = this.move.errorScore(samples[i].bodyPos, 0);
+            let numBeats = 1;
+            let left = i;
+            let j = i + 1;
+            while (j < samples.length) {
+                const nextBeat = samples[left].timestamp + beatDuration;
+                if (samples[j].timestamp >= nextBeat) {
+                    const before = this.move.errorScore(samples[j - 1].bodyPos, numBeats);
+                    const after = this.move.errorScore(samples[j].bodyPos, numBeats);
+                    const earlyOffset = nextBeat - samples[j - 1].timestamp;
+                    const lateOffset = samples[j].timestamp - nextBeat;
+                    total += interpolate(before, after, lateOffset / (earlyOffset + lateOffset))
+                    numBeats += 1;
+                    left = j;
+                }
+                j += 1;
+            }
+            const candidate = {
+                offset: samples[i].timestamp - start,
+                score: total / numBeats,
+            };
+            if (candidate.score < best.score) {
+                best = candidate;
+            }
+            i += 1;
+        }
+        return best;
     }
 }
 
@@ -185,6 +239,9 @@ function onError(e) {
     console.error(e);
 }
 
+function interpolate(a, b, ratio) {
+    return a * ratio + b * (1 - ratio);
+}
 
 loadSound(require('url:../beep.mp3'));
 

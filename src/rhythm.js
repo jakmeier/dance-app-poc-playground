@@ -2,6 +2,7 @@
 
 import { leg_indx } from "./util";
 
+// Score for not moving on the beat.
 // The start is estimated such that the score is best.
 export function onBeatScore(samples, targetBpm) {
     if (samples.length == 0) {
@@ -39,12 +40,12 @@ export function onBeatScore(samples, targetBpm) {
         }
         i += 1;
     }
-    return best.score;
+    return best;
 }
 
 const LEGS = leg_indx();
-const PERFECTLY_STILL = 50;
-const MAX_MOVEMENT = 300;
+const PERFECTLY_STILL = 0.1;
+const MAX_MOVEMENT = 0.75;
 
 // 100 points for being below stillness threshold, 0 points for moving fast
 function stillnessScore(movements) {
