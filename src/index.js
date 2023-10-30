@@ -5,13 +5,14 @@ import { Camera } from './camera'
 import { RendererCanvas2d } from './renderer_canvas2d';
 import { I, leg_indx } from './util';
 import { Tracker as DanceTacker } from './dance';
-import { addRecording } from './review';
+import { drawReview, setReviewVideo } from './review';
 
 let camera;
 let detector;
 let renderer;
 let danceTacker = new DanceTacker();
 let done = false;
+let reviewStart;
 
 async function main() {
     const model = poseDetection.SupportedModels.BlazePose;
@@ -28,9 +29,14 @@ async function main() {
     canvas.width = camera.video.width;
     canvas.height = camera.video.height;
     renderer = new RendererCanvas2d(canvas);
+    renderer.flipSkeleton = true;
 
     danceTacker.onStart =
-        () => camera.startRecording(canvas.captureStream());
+        () => {
+            reviewStart = new Date().getTime();
+            camera.startRecording(camera.video.srcObject);
+        }
+    // () => camera.startRecording(canvas.captureStream());
 
     loop();
 }
@@ -39,7 +45,7 @@ async function loop() {
     if (!done && danceTacker.isDone()) {
         done = true;
         const video = await camera.stopRecording();
-        addRecording(video);
+        setReviewVideo(video, danceTacker.history, reviewStart);
     }
 
     if (camera.video.readyState < 2) {
@@ -50,6 +56,9 @@ async function loop() {
         });
     }
 
+    // draw the review video 
+    drawReview();
+
     // start next frame already, don't wait for calculations
     requestAnimationFrame(loop);
 
@@ -57,23 +66,17 @@ async function loop() {
     // fix frame to allow async computations (or even put it in a web worker thread)
     const image = camera.captureFrame();
 
-    // blocks animation frame
-    // const poses = await pose(image);
-    // if (poses && poses.length > 0) {
-    //     for (const pose of poses) {
-    //         analyzePose(pose, frameTimestamp);
-    //     }
-    //     renderSkeletons(poses);
-    // }
-
     // releases animation frame
     pose(image).then(
         (poses) => {
+            if (poses && poses.length > 1) {
+                console.warn("more than 1 person detected");
+            }
             if (poses && poses.length > 0) {
                 for (const pose of poses) {
                     analyzePose(pose, frameTimestamp);
                 }
-                renderSkeletons(poses);
+                renderSkeletons(poses, image);
             }
         }
     );
@@ -82,7 +85,6 @@ async function loop() {
 function analyzePose(pose, timestamp) {
 
     const scoreThreshold = STATE.modelConfig.scoreThreshold || 0;
-
 
     const p = pose.keypoints3D;
     const legs = leg_indx();
@@ -95,7 +97,7 @@ function analyzePose(pose, timestamp) {
         || p[legs.right.ankle].score < scoreThreshold
     ) { return }
 
-    danceTacker.track(pose.keypoints3D, timestamp);
+    danceTacker.track(pose.keypoints, pose.keypoints3D, timestamp);
 }
 
 async function pose(image) {
@@ -107,7 +109,7 @@ async function pose(image) {
         try {
             return await detector.estimatePoses(
                 image,
-                { maxPoses: STATE.modelConfig.maxPoses, flipHorizontal: false });
+                { maxPoses: STATE.modelConfig.maxPoses, flipHorizontal: true });
 
         } catch (error) {
             detector.dispose();
@@ -118,10 +120,9 @@ async function pose(image) {
     return null;
 }
 
-function renderSkeletons(poses) {
-    const rendererParams = [camera.video, poses, STATE.isModelChanged];
+function renderSkeletons(poses, image) {
+    const rendererParams = [image, poses, STATE.isModelChanged];
     renderer.draw(rendererParams);
-    // console.log(poses);
 }
 
 main()

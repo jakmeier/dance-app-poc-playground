@@ -26,6 +26,29 @@
     #scatter-gl-container {
       position: relative;
     }
+
+    div.review {
+      display: grid;
+      justify-items: center;
+      gap: 10px;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto auto;
+    }
+
+    #replay-raw {
+      grid-column-start: 1;
+      grid-column-end: 3;
+    }
+
+    #replay-combined {
+      grid-column-start: 1;
+      grid-column-end: 2;
+    }
+
+    #replay-skeleton {
+      grid-column-start: 2;
+      grid-column-end: 3;
+    }
   </style>
 </head>
 
@@ -35,14 +58,7 @@
     <div class="container">
       <div class="canvas-wrapper">
         <canvas id="output"></canvas>
-        <video id="video" playsinline style="
-        -webkit-transform: scaleX(-1);
-        transform: scaleX(-1);
-        visibility: hidden;
-        width: auto;
-        height: auto;
-        ">
-        </video>
+        <video id="video" playsinline style="visibility: hidden; width: auto; height: auto;"></video>
       </div>
       <div id="scatter-gl-container"></div>
     </div>
@@ -55,15 +71,11 @@
     </div>
     <div>
     </div>
-    <div>
+    <div class="review">
       <h1>Review</h1>
-      <video id="replay" playsinline controls style="
-        -webkit-transform: scaleX(-1);
-        transform: scaleX(-1);
-        width: auto;
-        height: auto;
-        ">
-      </video>
+      <video id="replay-raw" playsinline controls style="width: auto; height: auto;"></video>
+      <canvas id="replay-combined"></canvas>
+      <canvas id="replay-skeleton"></canvas>
     </div>
   </div>
 </body>

@@ -78,19 +78,24 @@ export class Camera {
     return camera;
   }
 
-  captureFrame() {
+  captureFrame(isMirrored = true) {
+    this.hiddenCanvasContext.save();
+    if (isMirrored) {
+      this.hiddenCanvasContext.translate(this.hiddenCanvas.width, 0);
+      this.hiddenCanvasContext.scale(-1, 1);
+    }
     this.hiddenCanvasContext.drawImage(this.video, 0, 0);
+    this.hiddenCanvasContext.restore();
+
     return this.hiddenCanvasContext.getImageData(0, 0, this.video.width, this.video.height);
   }
 
   // starts recording the camera displayed stream
   startRecording(stream) {
-    console.log(`start recording`);
     this.recorder = new MediaRecorder(stream);
     this.recordedBlobs = [];
 
     this.recorder.ondataavailable = (event) => {
-      console.log(`push data`);
       this.recordedBlobs.push(event.data);
     };
     this.recorder.onerror = onRecorderError();
@@ -104,9 +109,8 @@ export class Camera {
       this.recorder.onerror = (event) => reject(event.name);
     });
     this.recorder.stop();
-    await stopped;
+    await stopped.catch(onRecorderError);
 
-    console.log(`stopping with ${this.recordedBlobs.length} parts`);
     return new Blob(this.recordedBlobs, { type: "video/webm" });
   }
 }

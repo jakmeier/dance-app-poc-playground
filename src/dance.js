@@ -27,20 +27,20 @@ export class Tracker {
         );
     }
 
-    track(keypoints, timestamp) {
-        const bodyPos = BodyPosition.fromKeypoints(keypoints);
+    track(keypoints, keypoints3D, timestamp) {
+        const bodyPos = BodyPosition.fromKeypoints(keypoints3D);
         let movement = null;
         if (this.history.length > 0) {
             const timeDelta = (timestamp - this.history[this.history.length - 1].timestamp) / 1000;
-            const prev = this.history[this.history.length - 1].keypoints;
-            movement = keypoints.map((now, i) => pointDistance(now, prev[i]) / timeDelta);
+            const prev = this.history[this.history.length - 1].keypoints3D;
+            movement = keypoints3D.map((now, i) => pointDistance(now, prev[i]) / timeDelta);
         }
         this.left.track(bodyPos.leftThigh);
         this.right.track(bodyPos.rightThigh);
-        this.history.push({ timestamp, bodyPos, movement, keypoints });
+        this.history.push({ timestamp, bodyPos, movement, keypoints, keypoints3D });
 
         const chartedIndices = [23, 25, 27, 29, 31, 24, 26, 28, 30, 32];
-        const chartableKeypoints = chartedIndices.map((i) => keypoints[i]);
+        const chartableKeypoints = chartedIndices.map((i) => keypoints3D[i]);
         if (!this.chart) {
             this.chart = createChart(chartableKeypoints);
             this.chart.show(1);
@@ -62,13 +62,13 @@ export class Tracker {
             const bpms = [80, 90, 100, 110, 120, 130];
             for (const bpm of bpms) {
                 const score = onBeatScore(this.history, bpm);
-                console.log(`rhythm score ${bpm} ${score.score} at offset ${score.offset}`);
+                // console.log(`rhythm score ${bpm} ${score.score} at offset ${score.offset}`);
             }
             let best = { score: 99999999 };
             for (let i = 0; i < bpms.length; i++) {
                 const bpm = bpms[i];
                 const score = this.bpmError(bpm);
-                console.log(`shape score ${bpm} ${score.score} at offset ${score.offset}`);
+                // console.log(`shape score ${bpm} ${score.score} at offset ${score.offset}`);
                 if (score.score < best.score) {
                     score.bpm = bpm;
                     best = score;

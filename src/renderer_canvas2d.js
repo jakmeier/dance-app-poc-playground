@@ -52,45 +52,63 @@ const COLOR_PALETTE = [
 export class RendererCanvas2d {
   constructor(canvas) {
     this.ctx = canvas.getContext('2d');
-    this.scatterGLEl = document.querySelector('#scatter-gl-container');
-    this.scatterGL = new scatter.ScatterGL(this.scatterGLEl, {
-      'rotateOnStart': true,
-      'selectEnabled': false,
-      'styles': { polyline: { defaultOpacity: 1, deselectedOpacity: 1 } }
-    });
+    // this.scatterGLEl = document.querySelector('#scatter-gl-container');
+    // this.scatterGL = new scatter.ScatterGL(this.scatterGLEl, {
+    //   'rotateOnStart': true,
+    //   'selectEnabled': false,
+    //   'styles': { polyline: { defaultOpacity: 1, deselectedOpacity: 1 } }
+    // });
     this.scatterGLHasInitialized = false;
     this.videoWidth = canvas.width;
     this.videoHeight = canvas.height;
-    this.flip(this.videoWidth, this.videoHeight);
+    this.flipSkeleton = false;
+    this.showAngles = false;
+
+    // this.scatterGLEl.style.display =
+    //   params.STATE.modelConfig.render3D ? 'inline-block' : 'none';
+    // this.flip(this.videoWidth, this.videoHeight);
   }
 
-  flip(videoWidth, videoHeight) {
+  flip() {
     // Because the image from camera is mirrored, need to flip horizontally.
-    this.ctx.translate(videoWidth, 0);
+    this.ctx.translate(this.videoWidth, 0);
     this.ctx.scale(-1, 1);
 
-    this.scatterGLEl.style =
-      `width: ${videoWidth}px; height: ${videoHeight}px;`;
-    this.scatterGL.resize();
+    // this.scatterGLEl.style =
+    //   `width: ${this.videoWidth}px; height: ${this.videoHeight}px;`;
+    // this.scatterGL.resize();
 
-    this.scatterGLEl.style.display =
-      params.STATE.modelConfig.render3D ? 'inline-block' : 'none';
+    // this.scatterGLEl.style.display =
+    //   params.STATE.modelConfig.render3D ? 'inline-block' : 'none';
   }
 
-  draw(rendererParams) {
-    const [video, poses, isModelChanged] = rendererParams;
-    this.drawCtx(video);
+  draw(rendererParams, renderVideo = true, renderSkeleton = true) {
+    this.ctx.save();
+    this.ctx.fillStyle = "black";
+    this.ctx.fillRect(0, 0, this.videoWidth, this.videoHeight);
+    this.ctx.restore();
 
-    // The null check makes sure the UI is not in the middle of changing to a
-    // different model. If during model change, the result is from an old model,
-    // which shouldn't be rendered.
-    if (poses && poses.length > 0 && !isModelChanged) {
-      this.drawResults(poses);
+    const [video, poses, isModelChanged] = rendererParams;
+    if (renderVideo) {
+      this.drawCtx(video);
+    }
+
+    if (renderSkeleton) {
+      // The null check makes sure the UI is not in the middle of changing to a
+      // different model. If during model change, the result is from an old model,
+      // which shouldn't be rendered.
+      if (poses && poses.length > 0 && !isModelChanged) {
+        this.drawResults(poses);
+      }
     }
   }
 
   drawCtx(video) {
-    this.ctx.drawImage(video, 0, 0, this.videoWidth, this.videoHeight);
+    if (video instanceof ImageData) {
+      this.ctx.putImageData(video, 0, 0);
+    } else {
+      this.ctx.drawImage(video, 0, 0, this.videoWidth, this.videoHeight);
+    }
   }
 
   clearCtx() {
@@ -102,9 +120,14 @@ export class RendererCanvas2d {
    * @param poses A list of poses to render.
    */
   drawResults(poses) {
+    this.ctx.save();
+    if (this.flipSkeleton) {
+      this.flip();
+    }
     for (const pose of poses) {
       this.drawResult(pose);
     }
+    this.ctx.restore();
   }
 
   /**
@@ -190,9 +213,11 @@ export class RendererCanvas2d {
         this.ctx.lineTo(kp2.x, kp2.y);
         this.ctx.stroke();
 
-        const alpha = Math.round(polarAngle(keypoints3D[i],keypoints3D[j]));
-        this.ctx.font = "20px serif";
-        this.ctx.fillText(`${alpha}`, (kp1.x + kp2.x) / 2, (kp1.y + kp2.y) / 2);
+        if (this.showAngles) {
+          const alpha = Math.round(polarAngle(keypoints3D[i], keypoints3D[j]));
+          this.ctx.font = "20px serif";
+          this.ctx.fillText(`${alpha}`, (kp1.x + kp2.x) / 2, (kp1.y + kp2.y) / 2);
+        }
       }
     });
   }
