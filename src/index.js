@@ -5,12 +5,13 @@ import { Camera } from './camera'
 import { RendererCanvas2d } from './renderer_canvas2d';
 import { I, leg_indx } from './util';
 import { Tracker as DanceTacker } from './dance';
-import { BodyPosition } from './moves';
+import { addRecording } from './review';
 
 let camera;
 let detector;
 let renderer;
 let danceTacker = new DanceTacker();
+let done = false;
 
 async function main() {
     const model = poseDetection.SupportedModels.BlazePose;
@@ -28,10 +29,19 @@ async function main() {
     canvas.height = camera.video.height;
     renderer = new RendererCanvas2d(canvas);
 
+    danceTacker.onStart =
+        () => camera.startRecording(canvas.captureStream());
+
     loop();
 }
 
 async function loop() {
+    if (!done && danceTacker.isDone()) {
+        done = true;
+        const video = await camera.stopRecording();
+        addRecording(video);
+    }
+
     if (camera.video.readyState < 2) {
         await new Promise((resolve) => {
             camera.video.onloadeddata = () => {

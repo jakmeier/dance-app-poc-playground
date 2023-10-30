@@ -15,8 +15,16 @@ export class Tracker {
         // this.move = Move.StandingStraight();
         this.moveIndex = 0;
         this.history = [];
+        this.beatsLeft = 16;
+        this.onStart = () => { };
 
-        setTimeout(() => playBeat(90, 16, this), 3000);
+        setTimeout(
+            () => {
+                playBeat(90, this.beatsLeft, this);
+                this.onStart();
+            },
+            3000
+        );
     }
 
     track(keypoints, timestamp) {
@@ -104,6 +112,7 @@ export class Tracker {
             console.warn(`no frame available for ${scheduledTime}, latest was ${this.history[0].timestamp}`);
         }
         this.moveIndex += 1;
+        this.beatsLeft -= 1;
     }
 
     // The start is estimated such that the errors is smallest.
@@ -145,6 +154,10 @@ export class Tracker {
             i += 1;
         }
         return best;
+    }
+
+    isDone() {
+        return this.beatsLeft <= 0;
     }
 }
 

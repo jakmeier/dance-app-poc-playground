@@ -82,4 +82,35 @@ export class Camera {
     this.hiddenCanvasContext.drawImage(this.video, 0, 0);
     return this.hiddenCanvasContext.getImageData(0, 0, this.video.width, this.video.height);
   }
+
+  // starts recording the camera displayed stream
+  startRecording(stream) {
+    console.log(`start recording`);
+    this.recorder = new MediaRecorder(stream);
+    this.recordedBlobs = [];
+
+    this.recorder.ondataavailable = (event) => {
+      console.log(`push data`);
+      this.recordedBlobs.push(event.data);
+    };
+    this.recorder.onerror = onRecorderError();
+    this.recorder.start();
+  }
+
+  // stops recording and output a blob with the video
+  async stopRecording() {
+    let stopped = new Promise((resolve, reject) => {
+      this.recorder.onstop = resolve;
+      this.recorder.onerror = (event) => reject(event.name);
+    });
+    this.recorder.stop();
+    await stopped;
+
+    console.log(`stopping with ${this.recordedBlobs.length} parts`);
+    return new Blob(this.recordedBlobs, { type: "video/webm" });
+  }
+}
+
+function onRecorderError() {
+  return (e) => console.log(`recorder error: ${e}`);
 }
