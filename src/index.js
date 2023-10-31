@@ -4,13 +4,13 @@ import { STATE } from './params'
 import { Camera } from './camera'
 import { RendererCanvas2d } from './renderer_canvas2d';
 import { I, leg_indx } from './util';
-import { Tracker as DanceTacker } from './dance';
+import { Tracker as DanceTracker } from './dance';
 import { drawReview, setReviewMove, setReviewVideo } from './review';
 
 let camera;
 let detector;
 let renderer;
-let danceTacker = new DanceTacker();
+let danceTracker = new DanceTracker();
 let done = false;
 let reviewStart;
 
@@ -31,22 +31,22 @@ async function main() {
     renderer = new RendererCanvas2d(canvas);
     renderer.flipSkeleton = true;
 
-    danceTacker.onStart =
+    danceTracker.onStart =
         () => {
             reviewStart = new Date().getTime();
             camera.startRecording(camera.video.srcObject);
         }
     // () => camera.startRecording(canvas.captureStream());
+    danceTracker.start(3000);
 
     loop();
 }
 
 async function loop() {
-    if (!done && danceTacker.isDone()) {
+    if (!done && danceTracker.isDone()) {
         done = true;
         const video = await camera.stopRecording();
-        setReviewVideo(video, danceTacker.history, reviewStart);
-        setReviewMove(danceTacker.move);
+        setReviewVideo(video, danceTracker.freezeForReview(reviewStart + 3000), reviewStart,  3000);
     }
 
     if (camera.video.readyState < 2) {
@@ -98,7 +98,7 @@ function analyzePose(pose, timestamp) {
         || p[legs.right.ankle].score < scoreThreshold
     ) { return }
 
-    danceTacker.track(pose.keypoints, pose.keypoints3D, timestamp);
+    danceTracker.track(pose.keypoints, pose.keypoints3D, timestamp);
 }
 
 async function pose(image) {

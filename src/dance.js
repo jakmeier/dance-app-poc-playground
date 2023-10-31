@@ -9,22 +9,31 @@ let lastUpdate = 0;
 
 export class Tracker {
     constructor() {
-        this.left = new Leg("left");
-        this.right = new Leg("right");
+        // this.left = new Leg("left");
+        // this.right = new Leg("right");
         this.move = Move.RunningMan();
         // this.move = Move.StandingStraight();
         this.moveIndex = 0;
         this.history = [];
         this.beatsLeft = 16;
-        this.onStart = () => { };
+        this.onStart = () => { }
+    }
 
+    start(ms) {
         setTimeout(
             () => {
                 playBeat(90, this.beatsLeft, this);
                 this.onStart();
             },
-            3000
+            ms
         );
+    }
+
+    freezeForReview(reviewStart) {
+        let tracker = new Tracker();
+        tracker.move = this.move;
+        tracker.history = this.history.filter((item) => item.timestamp >= reviewStart);
+        return tracker;
     }
 
     track(keypoints, keypoints3D, timestamp) {
@@ -35,8 +44,8 @@ export class Tracker {
             const prev = this.history[this.history.length - 1].keypoints3D;
             movement = keypoints3D.map((now, i) => pointDistance(now, prev[i]) / timeDelta);
         }
-        this.left.track(bodyPos.leftThigh);
-        this.right.track(bodyPos.rightThigh);
+        // this.left.track(bodyPos.leftThigh);
+        // this.right.track(bodyPos.rightThigh);
         this.history.push({ timestamp, bodyPos, movement, keypoints, keypoints3D });
 
         const chartedIndices = [23, 25, 27, 29, 31, 24, 26, 28, 30, 32];
@@ -57,26 +66,26 @@ export class Tracker {
             this.addErrorScore(chartedIndices.length, 3, bodyPos);
             this.chart.update();
         }
-        if (this.history.length > 100 && timestamp - lastUpdate > 1000) {
-            lastUpdate = timestamp;
-            const bpms = [80, 90, 100, 110, 120, 130];
-            for (const bpm of bpms) {
-                const score = onBeatScore(this.history, bpm);
-                // console.log(`rhythm score ${bpm} ${score.score} at offset ${score.offset}`);
-            }
-            let best = { score: 99999999 };
-            for (let i = 0; i < bpms.length; i++) {
-                const bpm = bpms[i];
-                const score = this.bpmError(bpm);
-                // console.log(`shape score ${bpm} ${score.score} at offset ${score.offset}`);
-                if (score.score < best.score) {
-                    score.bpm = bpm;
-                    best = score;
-                }
-            }
-            document.getElementById('bpm').innerText = best.bpm;
-            document.getElementById('score').innerText = 25 - best.score;
-        }
+        // if (this.history.length > 100 && timestamp - lastUpdate > 1000) {
+        //     lastUpdate = timestamp;
+        //     const bpms = [80, 90, 100, 110, 120, 130];
+        //     for (const bpm of bpms) {
+        //         const score = onBeatScore(this.history, bpm);
+        //         // console.log(`rhythm score ${bpm} ${score.score} at offset ${score.offset}`);
+        //     }
+        //     let best = { score: 99999999 };
+        //     for (let i = 0; i < bpms.length; i++) {
+        //         const bpm = bpms[i];
+        //         const score = this.bpmError(bpm);
+        //         // console.log(`shape score ${bpm} ${score.score} at offset ${score.offset}`);
+        //         if (score.score < best.score) {
+        //             score.bpm = bpm;
+        //             best = score;
+        //         }
+        //     }
+        //     document.getElementById('bpm').innerText = best.bpm;
+        //     document.getElementById('score').innerText = 25 - best.score;
+        // }
     }
 
     addErrorScore(offset, i, bodyPos) {
@@ -161,44 +170,44 @@ export class Tracker {
     }
 }
 
-export class Leg {
-    constructor(name) {
-        this.name = name;
-        this.currentAngle = 90;
-        this.isIncreasing = true;
-        this.previousChange = new Date();
-    }
+// export class Leg {
+//     constructor(name) {
+//         this.name = name;
+//         this.currentAngle = 90;
+//         this.isIncreasing = true;
+//         this.previousChange = new Date();
+//     }
 
-    checkForDirectionChange(newAngle) {
-        if (this.isIncreasing && newAngle < this.currentAngle) {
-            const timeElapsed = updateTime(this.previousChange);
-            const a = this.currentAngle - newAngle;
-            console.log(`${timeElapsed}, ${this.name} going back ${a}`);
-        }
-        else if (!this.isIncreasing && newAngle > this.currentAngle) {
-            const timeElapsed = updateTime(this.previousChange);
-            const a = newAngle - this.currentAngle;
-            console.log(`${timeElapsed}, ${this.name} going forward ${a}`);
-        }
-    }
+//     checkForDirectionChange(newAngle) {
+//         if (this.isIncreasing && newAngle < this.currentAngle) {
+//             const timeElapsed = updateTime(this.previousChange);
+//             const a = this.currentAngle - newAngle;
+//             console.log(`${timeElapsed}, ${this.name} going back ${a}`);
+//         }
+//         else if (!this.isIncreasing && newAngle > this.currentAngle) {
+//             const timeElapsed = updateTime(this.previousChange);
+//             const a = newAngle - this.currentAngle;
+//             console.log(`${timeElapsed}, ${this.name} going forward ${a}`);
+//         }
+//     }
 
-    update(newAngle) {
-        this.isIncreasing = newAngle > this.currentAngle;
-        this.currentAngle = newAngle;
-    }
+//     update(newAngle) {
+//         this.isIncreasing = newAngle > this.currentAngle;
+//         this.currentAngle = newAngle;
+//     }
 
-    isSignificantChange(newAngle) {
-        const significance = Math.abs(this.currentAngle - newAngle);
-        return significance > 5;
-    }
+//     isSignificantChange(newAngle) {
+//         const significance = Math.abs(this.currentAngle - newAngle);
+//         return significance > 5;
+//     }
 
-    track(newAngle) {
-        if (this.isSignificantChange(newAngle)) {
-            // this.checkForDirectionChange(newAngle);
-            this.update(newAngle);
-        }
-    }
-}
+//     track(newAngle) {
+//         if (this.isSignificantChange(newAngle)) {
+//             // this.checkForDirectionChange(newAngle);
+//             this.update(newAngle);
+//         }
+//     }
+// }
 
 function updateTime(time) {
     const currentTime = new Date();

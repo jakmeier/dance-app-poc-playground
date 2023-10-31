@@ -21,23 +21,24 @@ const RECORDING = {
     src: null,
     // when the source video starts, in ms timestamp
     videoStart: null,
+    // time in video before measured footage starts
+    videoIntroMs: null,
     // per-frame tracked positions
+    tracker: null,
     history: null,
-    // target move to show in review
-    move: null,
+    // (estimated) offset between first frame and beat 0
+    offset: 0,
 }
 
 
-export function setReviewVideo(videoBlob, history, reviewStart) {
-    RECORDING.history = history;
+export function setReviewVideo(videoBlob, tracker, reviewStart, videoIntroMs) {
+    RECORDING.tracker = tracker;
+    RECORDING.history = tracker.history;
     RECORDING.videoStart = reviewStart;
+    RECORDING.videoIntroMs = videoIntroMs;
     RECORDING.src = videoBlob;
+    reviewChart = createReviewChart(tracker.move.onBeat.length);
     refresh();
-}
-
-export function setReviewMove(move) {
-    RECORDING.move = move;
-    reviewChart = createReviewChart(move.onBeat.length);
 }
 
 export function drawReview() {
@@ -53,8 +54,8 @@ export function drawReview() {
             comboRenderer.draw([videoOutput, [pose]]);
             skeletonRenderer.draw([videoOutput, [pose]], renderVideo = false);
 
-            for (let i = 0; i < RECORDING.move.onBeat.length; i++) {
-                const errorScore = RECORDING.move.errorScores(frame.bodyPos, i);
+            for (let i = 0; i < RECORDING.tracker.move.onBeat.length; i++) {
+                const errorScore = RECORDING.tracker.move.errorScores(frame.bodyPos, i);
                 reviewChart.data.datasets[0].data[i] = errorScore.leftThigh;
                 reviewChart.data.datasets[1].data[i] = errorScore.rightThigh;
                 reviewChart.data.datasets[2].data[i] = errorScore.leftShin;
@@ -135,7 +136,8 @@ function createReviewChart(numPositions) {
                     stacked: true,
                 },
                 y: {
-                    stacked: true
+                    stacked: true,
+                    suggestedMax: 40_000,
                 }
             }
         }
@@ -143,4 +145,46 @@ function createReviewChart(numPositions) {
 
     const chart = new Chart(chartCanvas, config);
     return chart;
+}
+
+document.getElementById('action-rhythm').onclick =
+    function () {
+        const bpms = [...Array(20).keys()].map((i) => 2 * i + 60).concat([178, 180, 182]);
+        let best = { score: 99999999 };
+        for (let i = 0; i < bpms.length; i++) {
+            const bpm = bpms[i];
+            const score = RECORDING.tracker.bpmError(bpm);
+            console.log(`${bpm} shape score:   ${score.score}       (offset ${score.offset}ms)`);
+            if (score.score < best.score) {
+                score.bpm = bpm;
+                best = score;
+            }
+        }
+        document.getElementById('bpm').innerText = `bpm: ${best.bpm}`;
+        document.getElementById('score').innerText = `error: ${best.score}`;
+        document.getElementById('offset').innerText = `offset: ${best.offset}ms`;
+
+        RECORDING.offset = best.offset;
+        RECORDING.bpm = best.bpm;
+    };
+
+document.getElementById('action-generate-beats').onclick =
+    function () {
+        const parent = document.getElementById('generated-buttons');
+        parent.innerHTML = '';
+
+        const dt = 60000 / RECORDING.bpm;
+        const start = RECORDING.history[0].timestamp;
+        const end = RECORDING.history[RECORDING.history.length - 1].timestamp;
+        for (let i = 0; start + i * dt <= end; i++) {
+            const button = document.createElement("button");
+            button.onclick = () => setReviewCursor(RECORDING.videoIntroMs + RECORDING.offset + i * dt);
+            button.innerText = `${i + 1}`;
+            button.classList.add("beat-button");
+            parent.appendChild(button);
+        }
+    };
+
+function setReviewCursor(ms) {
+    videoOutput.currentTime = ms / 1000;
 }
