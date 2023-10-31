@@ -35,9 +35,16 @@
       grid-template-rows: auto auto;
     }
 
-    #replay-raw {
+    .review-main {
       grid-column-start: 1;
+      grid-column-end: 2;
+    }
+    
+    .replay-chart {
+      grid-column-start: 2;
       grid-column-end: 3;
+      width: 100%;
+      padding: 10px;
     }
 
     #replay-combined {
@@ -49,12 +56,21 @@
       grid-column-start: 2;
       grid-column-end: 3;
     }
+
   </style>
 </head>
 
 <body>
   <div id="stats"></div>
   <div id="main">
+
+    <div>
+      <h1 id="bpm">BPM</h1>
+      <h2 id="score">SCORE</h2>
+    </div>
+    <div>
+    </div>
+
     <div class="container">
       <div class="canvas-wrapper">
         <canvas id="output"></canvas>
@@ -63,24 +79,27 @@
       <div id="scatter-gl-container"></div>
     </div>
     <div>
-      <h1 id="bpm">BPM</h1>
-      <h2 id="score">SCORE</h2>
-    </div>
-    <div>
       <canvas id="chart"></canvas>
     </div>
-    <div>
-    </div>
+
     <div class="review">
       <h1>Review</h1>
-      <video id="replay-raw" playsinline controls style="width: auto; height: auto;"></video>
+
+      <div class="review-main">
+        <video id="replay-raw" playsinline controls style="width: auto; height: auto;"></video>
+        <!-- todo: controls for selecting beat-frames  -->
+      </div>
+      <div class="replay-chart">
+        <canvas id="replay-chart"></canvas>
+      </div>
+
       <canvas id="replay-combined"></canvas>
       <canvas id="replay-skeleton"></canvas>
+
     </div>
   </div>
 </body>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.6/dat.gui.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.min.js"></script>
+
 <script src="src/index.js" type="module"></script>
 
 </html>

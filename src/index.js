@@ -5,7 +5,7 @@ import { Camera } from './camera'
 import { RendererCanvas2d } from './renderer_canvas2d';
 import { I, leg_indx } from './util';
 import { Tracker as DanceTacker } from './dance';
-import { drawReview, setReviewVideo } from './review';
+import { drawReview, setReviewMove, setReviewVideo } from './review';
 
 let camera;
 let detector;
@@ -46,6 +46,7 @@ async function loop() {
         done = true;
         const video = await camera.stopRecording();
         setReviewVideo(video, danceTacker.history, reviewStart);
+        setReviewMove(danceTacker.move);
     }
 
     if (camera.video.readyState < 2) {

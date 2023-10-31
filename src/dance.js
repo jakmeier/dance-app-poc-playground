@@ -42,12 +42,12 @@ export class Tracker {
         const chartedIndices = [23, 25, 27, 29, 31, 24, 26, 28, 30, 32];
         const chartableKeypoints = chartedIndices.map((i) => keypoints3D[i]);
         if (!this.chart) {
-            this.chart = createChart(chartableKeypoints);
+            this.chart = createLiveChart(chartableKeypoints);
             this.chart.show(1);
             this.chart.show(6);
         }
         if (movement) {
-            this.chart.data.labels.push((timestamp - chartStart) / 1000);
+            this.chart.data.labels.push((timestamp - liveChartStart) / 1000);
             for (const i in chartedIndices) {
                 this.chart.data.datasets[i].data.push(movement[chartedIndices[i]]);
             }
@@ -217,38 +217,39 @@ function interpolate(a, b, ratio) {
 
 //*  charting  **/
 
-let chartStart;
-function createChart(keypoints) {
-    Chart.register(zoomPlugin);
+let liveChartStart;
+Chart.register(zoomPlugin);
+function createLiveChart(keypoints) {
     const chartCanvas = document.getElementById('chart');
-    chartStart = new Date().getTime();
+    liveChartStart = new Date().getTime();
+    const datasets = keypoints.map((p) => ({ label: p.name, data: [] }))
+        .concat([
+            { label: 'pos0', data: [] },
+            { label: 'pos0.leftThigh', data: [] },
+            { label: 'pos0.rightThigh', data: [] },
+            { label: 'pos0.leftShin', data: [] },
+            { label: 'pos0.rightShin', data: [] },
+            { label: 'pos1', data: [] },
+            { label: 'pos1.leftThigh', data: [] },
+            { label: 'pos1.rightThigh', data: [] },
+            { label: 'pos1.leftShin', data: [] },
+            { label: 'pos1.rightShin', data: [] },
+            { label: 'pos2', data: [] },
+            { label: 'pos2.leftThigh', data: [] },
+            { label: 'pos2.rightThigh', data: [] },
+            { label: 'pos2.leftShin', data: [] },
+            { label: 'pos2.rightShin', data: [] },
+            { label: 'pos3', data: [] },
+            { label: 'pos3.leftThigh', data: [] },
+            { label: 'pos3.rightThigh', data: [] },
+            { label: 'pos3.leftShin', data: [] },
+            { label: 'pos3.rightShin', data: [] }
+        ]);
     const chart = new Chart(chartCanvas, {
         type: 'line',
         data: {
             labels: [],
-            datasets: keypoints.map((p) => ({ label: p.name, data: [] }))
-                .concat([
-                    { label: 'pos0', data: [] },
-                    { label: 'pos0.leftThigh', data: [] },
-                    { label: 'pos0.rightThigh', data: [] },
-                    { label: 'pos0.leftShin', data: [] },
-                    { label: 'pos0.rightShin', data: [] },
-                    { label: 'pos1', data: [] },
-                    { label: 'pos1.leftThigh', data: [] },
-                    { label: 'pos1.rightThigh', data: [] },
-                    { label: 'pos1.leftShin', data: [] },
-                    { label: 'pos1.rightShin', data: [] },
-                    { label: 'pos2', data: [] },
-                    { label: 'pos2.leftThigh', data: [] },
-                    { label: 'pos2.rightThigh', data: [] },
-                    { label: 'pos2.leftShin', data: [] },
-                    { label: 'pos2.rightShin', data: [] },
-                    { label: 'pos3', data: [] },
-                    { label: 'pos3.leftThigh', data: [] },
-                    { label: 'pos3.rightThigh', data: [] },
-                    { label: 'pos3.leftShin', data: [] },
-                    { label: 'pos3.rightShin', data: [] }
-                ])
+            datasets
         },
         options: {
             responsive: true,
@@ -263,7 +264,7 @@ function createChart(keypoints) {
                 },
                 title: {
                     display: true,
-                    text: 'Chart.js Line Chart'
+                    text: 'Live Analysis'
                 },
                 zoom: {
                     pan: {
