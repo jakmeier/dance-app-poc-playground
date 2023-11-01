@@ -219,15 +219,38 @@ document.getElementById('action-generate-beats').onclick =
         const end = RECORDING.history[RECORDING.history.length - 1].timestamp;
         for (let i = 0; start + i * dt <= end; i++) {
             const button = document.createElement("button");
-            button.onclick = () => setReviewCursor(i, dt, offset);
+            const frameTime = RECORDING.videoIntroMs + offset + i * dt;
+            button.onclick = () => setReviewCursor(i, frameTime, dt, '');
             button.innerText = `${i + 1}`;
             button.classList.add("beat-button");
             parent.appendChild(button);
         }
     };
 
-function setReviewCursor(beat, dt, offset) {
-    videoOutput.currentTime = (RECORDING.videoIntroMs + offset + beat * dt) / 1000;
+document.getElementById('action-generate-hits').onclick =
+    function () {
+        const parent = document.getElementById('generated-buttons');
+        parent.innerHTML = '';
+
+        const estimate = RECORDING.tracker.computeBestFits();
+        const averageDelta = estimate.deltas.reduce((a, b) => a + b) / estimate.deltas.length;
+        console.log(`average ${averageDelta.toPrecision(4)}ms =^= ${Math.round(60_000/averageDelta)} bpm`);
+
+        for (let i = 0; i < estimate.numMoves; i++) {
+            const button = document.createElement("button");
+            const frameTime = RECORDING.videoIntroMs + estimate.frames[i].timestamp - RECORDING.history[0].timestamp;
+            const delta = i == 0 ? 0.0 : estimate.deltas[i - 1];
+            button.onclick = () => setReviewCursor(i, frameTime, delta, estimate.errors[i]);
+            button.innerText = `${i + 1}`;
+            button.classList.add("fit-button");
+            parent.appendChild(button);
+        }
+    };
+
+function setReviewCursor(beat, ms, delta, error) {
+    document.getElementById('delta-indicator').innerHTML = `${delta.toPrecision(4)}ms`;
+    document.getElementById('error-indicator').innerHTML = `error score: ${error}`;
+    videoOutput.currentTime = ms / 1000;
     const numColumns = reviewChart.data.datasets[0].data.length;
     const numSeries = reviewChart.data.datasets.length;
     const highlighted = beat % numColumns;

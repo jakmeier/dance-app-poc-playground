@@ -215,3 +215,9 @@ export const I = {
   RIGHTTHUMB: 37,
   RIGHTHAND: 38,
 };
+
+export function assert(condition, message = "Assertion failed") {
+  if (!condition) {
+    throw message;
+  }
+}

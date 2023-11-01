@@ -214,6 +214,10 @@ export class Tracker {
     isDone() {
         return this.beatsLeft <= 0;
     }
+
+    computeBestFits() {
+        return this.move.matchToRecording(this.history);
+    }
 }
 
 // export class Leg {

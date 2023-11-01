@@ -65,6 +65,11 @@
       background-color: black;
       color: whitesmoke;
     }
+
+    .fit-button {
+      background-color: darkblue;
+      color: whitesmoke;
+    }
   </style>
 </head>
 
@@ -89,6 +94,8 @@
       <div class="review-main">
         <video id="replay-raw" playsinline controls style="width: auto; height: auto;"></video>
         <p id="arrow-indicator"></p>
+        <p id="delta-indicator"></p>
+        <p id="error-indicator"></p>
         <p id="confidence-indicator"></p>
         <div id="generated-buttons"></div>
       </div>
@@ -109,7 +116,8 @@
           <p id="offset">OFFSET</p>
         </div>
         <button id="action-rhythm">Estimate Rhythm</button>
-        <button id="action-generate-beats">Generate Beats On Frame</button>
+        <button id="action-generate-beats">Generate Frames On Beat</button>
+        <button id="action-generate-hits">Generate Best Fit Frames</button>
         <h1>use for review</h1>
         <div>
           <label for="bpm-input">bpm</label>
