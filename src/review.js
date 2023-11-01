@@ -1,5 +1,6 @@
 import { RendererCanvas2d } from "./renderer_canvas2d";
 import { Chart } from 'chart.js/auto';
+import { leg_indx } from "./util";
 
 const videoOutput = document.getElementById('replay-raw');
 const combinedOutput = document.getElementById('replay-combined');
@@ -71,9 +72,24 @@ export function drawReview() {
                 frame.bodyPos.facingDirection === 'left' ? '←'
                     : frame.bodyPos.facingDirection === 'right' ? '→'
                         : '↕';
+            document.getElementById('confidence-indicator').innerHTML =
+                "confidence: " + confidenceString(frame);
         }
 
     }
+}
+
+function confidenceString(frame) {
+    const LEGS = leg_indx();
+
+    const leftHip = frame.keypoints[LEGS.left.hip].score.toPrecision(2);
+    const leftKnee = frame.keypoints[LEGS.left.knee].score.toPrecision(2);
+    const leftAnkle = frame.keypoints[LEGS.left.ankle].score.toPrecision(2);
+    const rightHip = frame.keypoints[LEGS.right.hip].score.toPrecision(2);
+    const rightKnee = frame.keypoints[LEGS.right.knee].score.toPrecision(2);
+    const rightAnkle = frame.keypoints[LEGS.right.ankle].score.toPrecision(2);
+
+    return `${leftHip}/${leftKnee}/${leftAnkle} | ${rightHip}/${rightKnee}/${rightAnkle} - (hip/knee/ankle)`;
 }
 
 async function refresh() {
