@@ -47,20 +47,25 @@ export class Move {
 const LEGS = leg_indx();
 
 export class BodyPosition {
-    constructor() {
+    constructor(facingDirection = 'unknown') {
         // all zero means standing straight
         this.leftThigh = 0;
         this.rightThigh = 0;
         this.leftShin = 0;
         this.rightShin = 0;
+        this.facingDirection = facingDirection;
     }
 
     static fromKeypoints(p) {
         // First, we need to know which direction the dancer is facing.
         const hipAngle = azimuth(p[LEGS.left.hip], p[LEGS.right.hip]);
         let directionCorrection = 1;
+        let facingDirection = 'unknown';
         if (hipAngle < 45 && hipAngle > -45) {
+            facingDirection = 'left';
             directionCorrection = -1;
+        } else {
+            facingDirection = 'right';
         }
         // Thighs are at zero when standing straight, positive when moving forward.
         const leftThigh = directionCorrection * signedPolarAngle(p[LEGS.left.hip], p[LEGS.left.knee]);
@@ -68,7 +73,7 @@ export class BodyPosition {
         // Shins are relative to thighs, at zero when stretched, positive when contracted.
         const leftShin = leftThigh - directionCorrection * polarAngle(p[LEGS.left.knee], p[LEGS.left.ankle]);
         const rightShin = rightThigh - directionCorrection * polarAngle(p[LEGS.right.knee], p[LEGS.right.ankle]);
-        return new BodyPosition()
+        return new BodyPosition(facingDirection)
             .rightLeg(rightThigh, rightShin)
             .leftLeg(leftThigh, leftShin);
     }

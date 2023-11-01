@@ -27,6 +27,10 @@
       position: relative;
     }
 
+    #arrow-indicator {
+      text-align: center;
+    }
+
     div.review {
       display: grid;
       justify-items: center;
@@ -84,7 +88,8 @@
 
       <div class="review-main">
         <video id="replay-raw" playsinline controls style="width: auto; height: auto;"></video>
-        <!-- todo: controls for selecting beat-frames  -->
+        <p id="arrow-indicator"></p>
+        <div id="generated-buttons"></div>
       </div>
       <div class="replay-chart">
         <canvas id="replay-chart"></canvas>
@@ -113,7 +118,6 @@
           <p id="score-output">SCORE</p>
         </div>
       </div>
-      <div id="generated-buttons"></div>
     </div>
 
   </div>

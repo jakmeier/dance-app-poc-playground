@@ -57,8 +57,10 @@ async function loop() {
         });
     }
 
-    // draw the review video 
-    drawReview();
+    // draw the review video, but only once the recording is done, not to slow down the FPS
+    if(done) {
+        drawReview();
+    }
 
     // start next frame already, don't wait for calculations
     requestAnimationFrame(loop);

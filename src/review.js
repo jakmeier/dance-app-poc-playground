@@ -66,6 +66,11 @@ export function drawReview() {
                 reviewChart.data.datasets[3].data[i] = errorScore.rightShin;
             }
             reviewChart.update();
+
+            document.getElementById('arrow-indicator').innerHTML =
+                frame.bodyPos.facingDirection === 'left' ? '←'
+                    : frame.bodyPos.facingDirection === 'right' ? '→'
+                        : '↕';
         }
 
     }
