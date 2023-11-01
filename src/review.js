@@ -31,14 +31,18 @@ const RECORDING = {
 }
 
 
-export function setReviewVideo(videoBlob, tracker, reviewStart, videoIntroMs) {
+export function setReviewVideo(videoBlob, tracker, reviewStart) {
     RECORDING.tracker = tracker;
     RECORDING.history = tracker.history;
     RECORDING.videoStart = reviewStart;
-    RECORDING.videoIntroMs = videoIntroMs;
+    RECORDING.videoIntroMs = tracker.countTime();
     RECORDING.src = videoBlob;
     reviewChart = createReviewChart(tracker.move.onBeat.length);
     refresh();
+
+    const n = RECORDING.history.length;
+    const t = RECORDING.history[n - 1].timestamp - RECORDING.videoStart - RECORDING.videoIntroMs;
+    console.log(`${n / (t / 1000)} FPS (${n} samples in ${t}ms)`);
 }
 
 export function drawReview() {
@@ -95,7 +99,13 @@ function currentFrameData(offsetMs) {
     const start = RECORDING.videoStart;
     for (let i = 0; i < RECORDING.history.length; i++) {
         if (RECORDING.history[i].timestamp >= start + offsetMs) {
-            return RECORDING.history[i];
+            if (i == 0) {
+                return RECORDING.history[i];
+            } else {
+                const diffBefore = (start + offsetMs) - RECORDING.history[i - 1].timestamp;
+                const afterBefore = RECORDING.history[i].timestamp - (start + offsetMs);
+                return diffBefore < afterBefore ? RECORDING.history[i - 1] : RECORDING.history[i];
+            }
         }
     }
     console.warn("no pose found");
@@ -149,7 +159,7 @@ function createReviewChart(numPositions) {
 
 document.getElementById('action-rhythm').onclick =
     function () {
-        const bpms = [...Array(20).keys()].map((i) => 2 * i + 60).concat([178, 180, 182]);
+        const bpms = [...Array(71).keys()].map((i) => 2 * i + 60);
         let best = { score: 99999999 };
         for (let i = 0; i < bpms.length; i++) {
             const bpm = bpms[i];
@@ -164,6 +174,10 @@ document.getElementById('action-rhythm').onclick =
         document.getElementById('score').innerText = `error: ${best.score}`;
         document.getElementById('offset').innerText = `offset: ${best.offset}ms`;
 
+        document.getElementById('bpm-input').value = `${best.bpm}`;
+        document.getElementById('offset-input').value = `${best.offset}`;
+        document.getElementById('score-output').innerText = `${best.score}`;
+
         RECORDING.offset = best.offset;
         RECORDING.bpm = best.bpm;
     };
@@ -173,18 +187,31 @@ document.getElementById('action-generate-beats').onclick =
         const parent = document.getElementById('generated-buttons');
         parent.innerHTML = '';
 
-        const dt = 60000 / RECORDING.bpm;
-        const start = RECORDING.history[0].timestamp;
+        const offset = Number(document.getElementById("offset-input").value) || RECORDING.offset;
+        const bpm = Number(document.getElementById("bpm-input").value) || RECORDING.bpm;
+
+        const estimate = RECORDING.tracker.bpmErrorFixedOffset(bpm, offset);
+        document.getElementById('score-output').innerText = `${estimate.score}`;
+
+        const dt = 60000 / bpm;
+        const start = RECORDING.history[0].timestamp + offset;
         const end = RECORDING.history[RECORDING.history.length - 1].timestamp;
         for (let i = 0; start + i * dt <= end; i++) {
             const button = document.createElement("button");
-            button.onclick = () => setReviewCursor(RECORDING.videoIntroMs + RECORDING.offset + i * dt);
+            button.onclick = () => setReviewCursor(i, dt, offset);
             button.innerText = `${i + 1}`;
             button.classList.add("beat-button");
             parent.appendChild(button);
         }
     };
 
-function setReviewCursor(ms) {
-    videoOutput.currentTime = ms / 1000;
+function setReviewCursor(beat, dt, offset) {
+    videoOutput.currentTime = (RECORDING.videoIntroMs + offset + beat * dt) / 1000;
+    const numColumns = reviewChart.data.datasets[0].data.length;
+    const numSeries = reviewChart.data.datasets.length;
+    const highlighted = beat % numColumns;
+    const borderWidth = [...Array(numColumns).keys()].map((i) => i === highlighted ? 4 : 0);
+    for (let i = 0; i < numSeries; i++) {
+        reviewChart.data.datasets[i].borderWidth = borderWidth;
+    }
 }

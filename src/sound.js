@@ -14,10 +14,12 @@ export function playSound(decodedAudio) {
     source.start();
 }
 
-export function playBeat(bpm, numBeats, tracker) {
+export function playBeat(bpm, numBeats, numCounts, tracker) {
     const dt = 60 / bpm;
-    playCounts(1, 4, dt);
-    setTimeout(() => metronome(SOUNDS.click, dt, numBeats * dt, tracker), 4 * dt * 1000);
+    if (numCounts > 0) {
+        playCounts(1, numCounts, dt);
+    }
+    setTimeout(() => metronome(SOUNDS.click, dt, numBeats * dt, tracker), numCounts * dt * 1000);
 }
 
 function metronome(decodedAudio, dt, seconds, tracker) {

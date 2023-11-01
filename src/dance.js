@@ -5,7 +5,7 @@ import { Chart } from 'chart.js/auto';
 import zoomPlugin from 'chartjs-plugin-zoom';
 import { playBeat } from './sound';
 
-let lastUpdate = 0;
+// let lastUpdate = 0;
 
 export class Tracker {
     constructor() {
@@ -15,6 +15,8 @@ export class Tracker {
         // this.move = Move.StandingStraight();
         this.moveIndex = 0;
         this.history = [];
+        this.soundBpm = 90;
+        this.soundCounts = 4;
         this.beatsLeft = 16;
         this.onStart = () => { }
     }
@@ -22,7 +24,7 @@ export class Tracker {
     start(ms) {
         setTimeout(
             () => {
-                playBeat(90, this.beatsLeft, this);
+                playBeat(this.soundBpm, this.beatsLeft, this.soundCounts, this);
                 this.onStart();
             },
             ms
@@ -32,8 +34,12 @@ export class Tracker {
     freezeForReview(reviewStart) {
         let tracker = new Tracker();
         tracker.move = this.move;
-        tracker.history = this.history.filter((item) => item.timestamp >= reviewStart);
+        tracker.history = this.history.filter((item) => item.timestamp >= reviewStart + this.countTime());
         return tracker;
+    }
+
+    countTime() {
+        return this.soundCounts * 60_000 / this.soundBpm;
     }
 
     track(keypoints, keypoints3D, timestamp) {
@@ -135,7 +141,7 @@ export class Tracker {
 
         let best = { score: 9999999999 };
         let i = 0;
-        while (samples[i].timestamp < start + beatDuration) {
+        while (samples[i].timestamp < start + this.move.onBeat.length * beatDuration) {
             let total = this.move.errorScore(samples[i].bodyPos, 0);
             let numBeats = 1;
             let left = i;
@@ -143,11 +149,13 @@ export class Tracker {
             while (j < samples.length) {
                 const nextBeat = samples[left].timestamp + beatDuration;
                 if (samples[j].timestamp >= nextBeat) {
-                    const before = this.move.errorScore(samples[j - 1].bodyPos, numBeats);
-                    const after = this.move.errorScore(samples[j].bodyPos, numBeats);
-                    const earlyOffset = nextBeat - samples[j - 1].timestamp;
-                    const lateOffset = samples[j].timestamp - nextBeat;
-                    total += interpolate(before, after, lateOffset / (earlyOffset + lateOffset))
+                    const tooEarly = nextBeat - samples[j - 1].timestamp;
+                    const tooLate = samples[j].timestamp - nextBeat;
+                    const before = samples[j - 1].bodyPos;
+                    const after = samples[j].bodyPos;
+                    const between = before.interpolate(after, tooLate / (tooEarly + tooLate));
+                    total += this.move.errorScore(between, numBeats);
+
                     numBeats += 1;
                     left = j;
                 }
@@ -163,6 +171,44 @@ export class Tracker {
             i += 1;
         }
         return best;
+    }
+
+    bpmErrorFixedOffset(targetBpm, offset) {
+        const samples = this.history;
+        if (samples.length == 0) {
+            return 0;
+        }
+        const beatDuration = 60_000 / targetBpm;
+        const start = samples[0].timestamp + offset;
+
+        let left = 0;
+        while (samples[left].timestamp < start) {
+            left++;
+        }
+
+        let total = this.move.errorScore(samples[left].bodyPos, 0);
+        let numBeats = 1;
+        let j = left + 1;
+        while (j < samples.length) {
+            const nextBeat = samples[left].timestamp + beatDuration;
+            if (samples[j].timestamp >= nextBeat) {
+                const tooEarly = nextBeat - samples[j - 1].timestamp;
+                const tooLate = samples[j].timestamp - nextBeat;
+                const before = samples[j - 1].bodyPos;
+                const after = samples[j].bodyPos;
+                const between = before.interpolate(after, tooLate / (tooEarly + tooLate));
+                total += this.move.errorScore(between, numBeats);
+
+                numBeats += 1;
+                left = j;
+            }
+            j += 1;
+        }
+        const candidate = {
+            offset,
+            score: total / numBeats,
+        };
+        return candidate;
     }
 
     isDone() {
@@ -218,10 +264,6 @@ function updateTime(time) {
 
 function pointDistance(p0, p1) {
     return Math.hypot(p0.x - p1.x, p0.y - p1.y);
-}
-
-function interpolate(a, b, ratio) {
-    return a * ratio + b * (1 - ratio);
 }
 
 //*  charting  **/

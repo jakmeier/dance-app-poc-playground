@@ -96,12 +96,23 @@
     </div>
     <div class="review-right">
       <div>
-        <h1 id="bpm">BPM</h1>
-        <h2 id="score">SCORE</h2>
-        <h2 id="offset">OFFSET</h2>
+        <h1>best estimate</h1>
+        <div>
+          <p id="bpm">BPM</p>
+          <p id="score">SCORE</p>
+          <p id="offset">OFFSET</p>
+        </div>
+        <button id="action-rhythm">Estimate Rhythm</button>
+        <button id="action-generate-beats">Generate Beats On Frame</button>
+        <h1>use for review</h1>
+        <div>
+          <label for="bpm-input">bpm</label>
+          <input id="bpm-input" type="number" />
+          <label for="offset-input">offset</label>
+          <input id="offset-input" type="number" />
+          <p id="score-output">SCORE</p>
+        </div>
       </div>
-      <button id="action-rhythm">Estimate Rhythm</button>
-      <button id="action-generate-beats">Generate Beats On Frame</button>
       <div id="generated-buttons"></div>
     </div>
 

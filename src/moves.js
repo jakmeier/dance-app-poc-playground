@@ -102,11 +102,24 @@ export class BodyPosition {
     }
 
     diff(other) {
-        const out = new BodyPosition;
+        const out = new BodyPosition();
         out.leftThigh = this.leftThigh - other.leftThigh;
         out.rightThigh = this.rightThigh - other.rightThigh;
         out.leftShin = this.leftShin - other.leftShin;
         out.rightShin = this.rightShin - other.rightShin;
         return out;
     }
+
+    interpolate(other, ratio) {
+        const out = new BodyPosition();
+        out.leftThigh = interpolate(this.leftThigh, other.leftThigh, ratio);
+        out.rightThigh = interpolate(this.rightThigh, other.rightThigh, ratio);
+        out.leftShin = interpolate(this.leftShin, other.leftShin, ratio);
+        out.rightShin = interpolate(this.rightShin, other.rightShin, ratio);
+        return out;
+    }
+}
+
+function interpolate(a, b, ratio) {
+    return a * ratio + b * (1 - ratio);
 }

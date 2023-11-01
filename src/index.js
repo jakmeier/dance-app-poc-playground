@@ -46,7 +46,7 @@ async function loop() {
     if (!done && danceTracker.isDone()) {
         done = true;
         const video = await camera.stopRecording();
-        setReviewVideo(video, danceTracker.freezeForReview(reviewStart + 3000), reviewStart,  3000);
+        setReviewVideo(video, danceTracker.freezeForReview(reviewStart), reviewStart);
     }
 
     if (camera.video.readyState < 2) {
