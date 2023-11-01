@@ -1,4 +1,4 @@
-import { leg_indx } from "./util";
+import { leg_indx, shoulder_indx } from "./util";
 import { signedPolarAngle, polarAngle, azimuth } from './util';
 
 export class Move {
@@ -45,6 +45,7 @@ export class Move {
 }
 
 const LEGS = leg_indx();
+const SHOULDER = shoulder_indx();
 
 export class BodyPosition {
     constructor(facingDirection = 'unknown') {
@@ -58,10 +59,16 @@ export class BodyPosition {
 
     static fromKeypoints(p) {
         // First, we need to know which direction the dancer is facing.
-        const hipAngle = azimuth(p[LEGS.left.hip], p[LEGS.right.hip]);
+        //
+        // Using the hip azimuth works for ~95% of typical frames, but exactly
+        // on the extreme points of a running man, the angle is right at the
+        // infliction point. In other words, the range of hip azimuths during a
+        // straight running man is about 180°.
+        // Instead, let's try the shoulder. It seems more stable so far.
+        const shoulderAngle = azimuth(p[SHOULDER.left], p[SHOULDER.right]);
         let directionCorrection = 1;
         let facingDirection = 'unknown';
-        if (hipAngle < 45 && hipAngle > -45) {
+        if (shoulderAngle < 45 && shoulderAngle > -45) {
             facingDirection = 'left';
             directionCorrection = -1;
         } else {

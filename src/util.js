@@ -60,6 +60,10 @@ export function leg_indx() {
   };
 }
 
+export function shoulder_indx() {
+  return { left: 11, right: 12 };
+}
+
 /**
  * The azimuth is the angle to z-axis, which goes from the camera outwards.
  * It is between -180° and 180°, with 0° from the camera out.
