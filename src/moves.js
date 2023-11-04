@@ -79,10 +79,13 @@ export class Move {
             i = next.index;
         }
 
+        const averageError = errors.reduce((a, b) => a + b) / errors.length;
+
         return {
             offset: first.start - history[0].timestamp,
             start: first.start,
             numMoves: frames.length,
+            averageError,
             frames,
             errors,
             deltas,
@@ -90,7 +93,7 @@ export class Move {
     }
 
     /**
-     * Find the best fir of a position in a given history range.
+     * Find the best fit of a position in a given history range.
      * 
      * @param {[*]} history: list of recorded positions
      * @param {number} start: index in recorded positions to start search
@@ -99,30 +102,7 @@ export class Move {
      * @param {number} maxDt: largest time interval between start and match
      */
     bestFit(history, start, beat, minDt, maxDt) {
-        assert(minDt <= maxDt, `${minDt} <= ${maxDt}`);
-        assert(start < history.length, `${start} < ${history.length}`);
-        if (history[start].timestamp + minDt > history[history.length - 1].timestamp) {
-            assert(false, "no frames after start + minDt");
-        }
-        let smallestError = Infinity;
-        let smallestErrorIndex = history.length;
-        const startTime = history[start].timestamp + minDt;
-        const endTime = history[start].timestamp + maxDt;
-        for (let i = start; i < history.length && history[i].timestamp <= endTime; i++) {
-            if (history[i].timestamp < startTime) {
-                continue;
-            }
-            const error = this.errorScore(history[i].bodyPos, beat);
-            if (error < smallestError) {
-                smallestError = error;
-                smallestErrorIndex = i;
-            }
-        }
-        return {
-            index: smallestErrorIndex,
-            start: history[smallestErrorIndex].timestamp,
-            error: smallestError,
-        };
+        return this.onBeat[beat % this.onBeat.length].bestFit(history, start, minDt, maxDt);
     }
 }
 
@@ -205,12 +185,39 @@ export class BodyPosition {
     }
 
     interpolate(other, ratio) {
-        const out = new BodyPosition();
+        const out = new BodyPosition(this.facingDirection);
         out.leftThigh = interpolate(this.leftThigh, other.leftThigh, ratio);
         out.rightThigh = interpolate(this.rightThigh, other.rightThigh, ratio);
         out.leftShin = interpolate(this.leftShin, other.leftShin, ratio);
         out.rightShin = interpolate(this.rightShin, other.rightShin, ratio);
         return out;
+    }
+
+    bestFit(history, start, minDt, maxDt) {
+        assert(minDt <= maxDt, `${minDt} <= ${maxDt}`);
+        assert(start < history.length, `${start} < ${history.length}`);
+        if (history[start].timestamp + minDt > history[history.length - 1].timestamp) {
+            assert(false, "no frames after start + minDt");
+        }
+        let smallestError = Infinity;
+        let smallestErrorIndex = start;
+        const startTime = history[start].timestamp + minDt;
+        const endTime = history[start].timestamp + maxDt;
+        for (let i = start; i < history.length && history[i].timestamp <= endTime; i++) {
+            if (history[i].timestamp < startTime) {
+                continue;
+            }
+            const error = this.errorScore(history[i].bodyPos) / 1000;
+            if (error < smallestError) {
+                smallestError = error;
+                smallestErrorIndex = i;
+            }
+        }
+        return {
+            index: smallestErrorIndex,
+            start: history[smallestErrorIndex].timestamp,
+            error: smallestError,
+        };
     }
 }
 

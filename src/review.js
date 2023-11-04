@@ -1,10 +1,13 @@
 import { RendererCanvas2d } from "./renderer_canvas2d";
 import { Chart } from 'chart.js/auto';
 import { leg_indx } from "./util";
+import { detectPositions, detectSteps } from "./moves_db";
 
 const videoOutput = document.getElementById('replay-raw');
 const combinedOutput = document.getElementById('replay-combined');
 const skeletonOutput = document.getElementById('replay-skeleton');
+const reviewPositionsCanvas = document.getElementById('review-positions-canvas');
+const reviewPositionsCanvasCtx = reviewPositionsCanvas.getContext('2d');
 
 let reviewChart;
 
@@ -12,6 +15,8 @@ combinedOutput.width = 640;
 combinedOutput.height = 480;
 skeletonOutput.width = 640;
 skeletonOutput.height = 480;
+reviewPositionsCanvas.width = 640;
+reviewPositionsCanvas.height = 480;
 const comboRenderer = new RendererCanvas2d(combinedOutput);
 const skeletonRenderer = new RendererCanvas2d(skeletonOutput);
 
@@ -234,7 +239,7 @@ document.getElementById('action-generate-hits').onclick =
 
         const estimate = RECORDING.tracker.computeBestFits();
         const averageDelta = estimate.deltas.reduce((a, b) => a + b) / estimate.deltas.length;
-        console.log(`average ${averageDelta.toPrecision(4)}ms =^= ${Math.round(60_000/averageDelta)} bpm`);
+        console.log(`average ${averageDelta.toPrecision(4)}ms =^= ${Math.round(60_000 / averageDelta)} bpm`);
 
         for (let i = 0; i < estimate.numMoves; i++) {
             const button = document.createElement("button");
@@ -246,6 +251,51 @@ document.getElementById('action-generate-hits').onclick =
             parent.appendChild(button);
         }
     };
+
+document.getElementById('action-generate-any-matches-slow').onclick =
+    function () {
+        stepAnalysis(detectPositions(RECORDING.history, 400, 900));
+
+    };
+document.getElementById('action-generate-any-matches-fast').onclick =
+    function () {
+        const minDtRepeat = 500;
+        const positions = detectPositions(RECORDING.history, 10, 200);
+        console.log("positions", positions);
+
+        const numBefore = positions.length;
+        for (let i = positions.length - 1; i > 0; i--) {
+            if (positions[i].position.id === positions[i - 1].position.id) {
+                if (positions[i - 1].start - positions[i].start < minDtRepeat) {
+                    if (positions[i].error > positions[i - 1].error) {
+                        positions.splice(i, 1);
+                    } else {
+                        positions.splice(i - 1, 1);
+                    }
+                }
+            }
+        }
+        const numAfter = positions.length;
+        console.log(`found ${numBefore} positions, de-deduplicated to ${numAfter}`);
+
+        stepAnalysis(positions);
+    };
+
+function stepAnalysis(positions) {
+    console.log("Positions", positions);
+    const t2x = (t) => (t - RECORDING.videoStart) / (RECORDING.history[RECORDING.history.length - 1].timestamp - RECORDING.videoStart) * 640;
+    for (p of positions) {
+        const img = p.position.img;
+        const x = t2x(p.start);
+        if (p.facingDirection === 'left') {
+            reviewPositionsCanvasCtx.scale(-1, 1);
+        } 
+        reviewPositionsCanvasCtx.drawImage(img, x, 0, 15, 25);
+        reviewPositionsCanvasCtx.setTransform(1, 0, 0, 1, 0, 0);
+    }
+    const steps = detectSteps(positions);
+    console.log("Steps", steps);
+}
 
 function setReviewCursor(beat, ms, delta, error) {
     document.getElementById('delta-indicator').innerHTML = `${delta.toPrecision(4)}ms`;

@@ -70,7 +70,9 @@ export class Tracker {
             this.addErrorScore(chartedIndices.length, 1, bodyPos);
             this.addErrorScore(chartedIndices.length, 2, bodyPos);
             this.addErrorScore(chartedIndices.length, 3, bodyPos);
-            this.chart.update();
+            if (this.isDone()) {
+                this.chart.update();
+            }
         }
         // if (this.history.length > 100 && timestamp - lastUpdate > 1000) {
         //     lastUpdate = timestamp;
@@ -216,7 +218,16 @@ export class Tracker {
     }
 
     computeBestFits() {
-        return this.move.matchToRecording(this.history);
+        const slow = this.move.matchToRecording(this.history, 600, 1350);
+        const mid = this.move.matchToRecording(this.history, 300, 800);
+        const fast = this.move.matchToRecording(this.history, 150, 400);
+        if (1.25 * slow.averageError < mid.averageError && 1.5 * slow.averageError < fast.averageError) {
+            return slow;
+        } else if (1.25 * mid.averageError < fast.averageError) {
+            return mid;
+        } else {
+            return fast;
+        }
     }
 }
 

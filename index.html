@@ -47,7 +47,7 @@
     .replay-chart {
       grid-column-start: 2;
       grid-column-end: 3;
-      width: 100%;
+      max-width: 500px;
       padding: 10px;
     }
 
@@ -61,14 +61,18 @@
       grid-column-end: 3;
     }
 
+    .beat-button,
+    .fit-button {
+      color: whitesmoke;
+      padding: 25px;
+    }
+
     .beat-button {
       background-color: black;
-      color: whitesmoke;
     }
 
     .fit-button {
       background-color: darkblue;
-      color: whitesmoke;
     }
   </style>
 </head>
@@ -98,6 +102,7 @@
         <p id="error-indicator"></p>
         <p id="confidence-indicator"></p>
         <div id="generated-buttons"></div>
+        <canvas id="review-positions-canvas"></canvas>
       </div>
       <div class="replay-chart">
         <canvas id="replay-chart"></canvas>
@@ -118,6 +123,8 @@
         <button id="action-rhythm">Estimate Rhythm</button>
         <button id="action-generate-beats">Generate Frames On Beat</button>
         <button id="action-generate-hits">Generate Best Fit Frames</button>
+        <button id="action-generate-any-matches-slow">Generate Any Fitting Positions (Slow)</button>
+        <button id="action-generate-any-matches-fast">Generate Any Fitting Positions (Fast)</button>
         <h1>use for review</h1>
         <div>
           <label for="bpm-input">bpm</label>
