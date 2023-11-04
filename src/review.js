@@ -3,6 +3,9 @@ import { Chart } from 'chart.js/auto';
 import { leg_indx } from "./util";
 import { detectPositions, detectSteps } from "./moves_db";
 
+const ENABLE_COMBO_RENDERER = false;
+const ENABLE_SKELETON_RENDERER = true;
+
 const videoOutput = document.getElementById('replay-raw');
 const combinedOutput = document.getElementById('replay-combined');
 const skeletonOutput = document.getElementById('replay-skeleton');
@@ -11,12 +14,12 @@ const reviewPositionsCanvasCtx = reviewPositionsCanvas.getContext('2d');
 
 let reviewChart;
 
-combinedOutput.width = 640;
-combinedOutput.height = 480;
-skeletonOutput.width = 640;
+combinedOutput.width = 480;
+combinedOutput.height = 360;
+skeletonOutput.width = 480;
 skeletonOutput.height = 480;
 reviewPositionsCanvas.width = 640;
-reviewPositionsCanvas.height = 480;
+reviewPositionsCanvas.height = 25;
 const comboRenderer = new RendererCanvas2d(combinedOutput);
 const skeletonRenderer = new RendererCanvas2d(skeletonOutput);
 
@@ -61,8 +64,16 @@ export function drawReview() {
         const frame = currentFrameData(offsetMs);
         if (frame) {
             const pose = { keypoints: frame.keypoints, keypoints3D: frame.keypoints };
-            comboRenderer.draw([videoOutput, [pose]]);
-            skeletonRenderer.draw([videoOutput, [pose]], renderVideo = false);
+            if (ENABLE_SKELETON_RENDERER) {
+                skeletonRenderer.draw([videoOutput, [pose]], renderVideo = false);
+            } else {
+                skeletonOutput.classList.add('hidden');
+            }
+            if (ENABLE_COMBO_RENDERER) {
+                comboRenderer.draw([videoOutput, [pose]]);
+            } else {
+                combinedOutput.classList.add('hidden');
+            }
 
             for (let i = 0; i < RECORDING.tracker.move.onBeat.length; i++) {
                 const errorScore = RECORDING.tracker.move.errorScores(frame.bodyPos, i);
@@ -253,33 +264,31 @@ document.getElementById('action-generate-hits').onclick =
     };
 
 document.getElementById('action-generate-any-matches-slow').onclick =
-    function () {
-        stepAnalysis(detectPositions(RECORDING.history, 400, 900));
-
-    };
+    () => computeAndShowAnyMatches(400, 900, 1000);
 document.getElementById('action-generate-any-matches-fast').onclick =
-    function () {
-        const minDtRepeat = 500;
-        const positions = detectPositions(RECORDING.history, 10, 200);
-        console.log("positions", positions);
+    () => computeAndShowAnyMatches(10, 200, 500);
 
-        const numBefore = positions.length;
-        for (let i = positions.length - 1; i > 0; i--) {
-            if (positions[i].position.id === positions[i - 1].position.id) {
-                if (positions[i - 1].start - positions[i].start < minDtRepeat) {
-                    if (positions[i].error > positions[i - 1].error) {
-                        positions.splice(i, 1);
-                    } else {
-                        positions.splice(i - 1, 1);
-                    }
+export function computeAndShowAnyMatches(minDt, maxDt, minDtRepeat) {
+    const positions = detectPositions(RECORDING.history, minDt, maxDt);
+    console.log("positions", positions);
+
+    const numBefore = positions.length;
+    for (let i = positions.length - 1; i > 0; i--) {
+        if (positions[i].position.id === positions[i - 1].position.id) {
+            if (positions[i - 1].start - positions[i].start < minDtRepeat) {
+                if (positions[i].error > positions[i - 1].error) {
+                    positions.splice(i, 1);
+                } else {
+                    positions.splice(i - 1, 1);
                 }
             }
         }
-        const numAfter = positions.length;
-        console.log(`found ${numBefore} positions, de-deduplicated to ${numAfter}`);
+    }
+    const numAfter = positions.length;
+    console.log(`found ${numBefore} positions, de-deduplicated to ${numAfter}`);
 
-        stepAnalysis(positions);
-    };
+    stepAnalysis(positions);
+};
 
 function stepAnalysis(positions) {
     console.log("Positions", positions);
@@ -288,8 +297,9 @@ function stepAnalysis(positions) {
         const img = p.position.img;
         const x = t2x(p.start);
         if (p.facingDirection === 'left') {
+            reviewPositionsCanvasCtx.translate(15, 0);
             reviewPositionsCanvasCtx.scale(-1, 1);
-        } 
+        }
         reviewPositionsCanvasCtx.drawImage(img, x, 0, 15, 25);
         reviewPositionsCanvasCtx.setTransform(1, 0, 0, 1, 0, 0);
     }

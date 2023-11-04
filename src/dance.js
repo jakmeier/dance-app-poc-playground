@@ -7,12 +7,11 @@ import { playBeat } from './sound';
 
 // let lastUpdate = 0;
 
+const CHART_ENABLED = false;
+
 export class Tracker {
-    constructor() {
-        // this.left = new Leg("left");
-        // this.right = new Leg("right");
-        this.move = Move.RunningMan();
-        // this.move = Move.StandingStraight();
+    constructor(move) {
+        this.move = move;
         this.moveIndex = 0;
         this.history = [];
         this.soundBpm = 90;
@@ -32,8 +31,7 @@ export class Tracker {
     }
 
     freezeForReview(reviewStart) {
-        let tracker = new Tracker();
-        tracker.move = this.move;
+        let tracker = new Tracker(this.move);
         tracker.history = this.history.filter((item) => item.timestamp >= reviewStart + this.countTime());
         return tracker;
     }
@@ -56,12 +54,12 @@ export class Tracker {
 
         const chartedIndices = [23, 25, 27, 29, 31, 24, 26, 28, 30, 32];
         const chartableKeypoints = chartedIndices.map((i) => keypoints3D[i]);
-        if (!this.chart) {
+        if (CHART_ENABLED && !this.chart) {
             this.chart = createLiveChart(chartableKeypoints);
             this.chart.show(1);
             this.chart.show(6);
         }
-        if (movement) {
+        if (movement && CHART_ENABLED) {
             this.chart.data.labels.push((timestamp - liveChartStart) / 1000);
             for (const i in chartedIndices) {
                 this.chart.data.datasets[i].data.push(movement[chartedIndices[i]]);
@@ -231,45 +229,6 @@ export class Tracker {
     }
 }
 
-// export class Leg {
-//     constructor(name) {
-//         this.name = name;
-//         this.currentAngle = 90;
-//         this.isIncreasing = true;
-//         this.previousChange = new Date();
-//     }
-
-//     checkForDirectionChange(newAngle) {
-//         if (this.isIncreasing && newAngle < this.currentAngle) {
-//             const timeElapsed = updateTime(this.previousChange);
-//             const a = this.currentAngle - newAngle;
-//             console.log(`${timeElapsed}, ${this.name} going back ${a}`);
-//         }
-//         else if (!this.isIncreasing && newAngle > this.currentAngle) {
-//             const timeElapsed = updateTime(this.previousChange);
-//             const a = newAngle - this.currentAngle;
-//             console.log(`${timeElapsed}, ${this.name} going forward ${a}`);
-//         }
-//     }
-
-//     update(newAngle) {
-//         this.isIncreasing = newAngle > this.currentAngle;
-//         this.currentAngle = newAngle;
-//     }
-
-//     isSignificantChange(newAngle) {
-//         const significance = Math.abs(this.currentAngle - newAngle);
-//         return significance > 5;
-//     }
-
-//     track(newAngle) {
-//         if (this.isSignificantChange(newAngle)) {
-//             // this.checkForDirectionChange(newAngle);
-//             this.update(newAngle);
-//         }
-//     }
-// }
-
 function updateTime(time) {
     const currentTime = new Date();
     const timeElapsed = currentTime.getTime() - time.getTime();
@@ -351,11 +310,6 @@ function createLiveChart(keypoints) {
     for (i in chart.data.datasets) {
         chart.hide(i);
     }
-
-    var button2 = document.createElement("button");
-    button2.onclick = () => { playSound(); };
-    button2.innerText = "Play sound";
-    chartCanvas.insertAdjacentElement('afterend', button2);
 
     var button = document.createElement("button");
     button.onclick = () => { chart.resetZoom(); };

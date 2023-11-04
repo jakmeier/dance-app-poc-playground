@@ -52,34 +52,16 @@ const COLOR_PALETTE = [
 export class RendererCanvas2d {
   constructor(canvas) {
     this.ctx = canvas.getContext('2d');
-    // this.scatterGLEl = document.querySelector('#scatter-gl-container');
-    // this.scatterGL = new scatter.ScatterGL(this.scatterGLEl, {
-    //   'rotateOnStart': true,
-    //   'selectEnabled': false,
-    //   'styles': { polyline: { defaultOpacity: 1, deselectedOpacity: 1 } }
-    // });
-    this.scatterGLHasInitialized = false;
     this.videoWidth = canvas.width;
     this.videoHeight = canvas.height;
     this.flipSkeleton = false;
     this.showAngles = false;
-
-    // this.scatterGLEl.style.display =
-    //   params.STATE.modelConfig.render3D ? 'inline-block' : 'none';
-    // this.flip(this.videoWidth, this.videoHeight);
   }
 
   flip() {
     // Because the image from camera is mirrored, need to flip horizontally.
     this.ctx.translate(this.videoWidth, 0);
     this.ctx.scale(-1, 1);
-
-    // this.scatterGLEl.style =
-    //   `width: ${this.videoWidth}px; height: ${this.videoHeight}px;`;
-    // this.scatterGL.resize();
-
-    // this.scatterGLEl.style.display =
-    //   params.STATE.modelConfig.render3D ? 'inline-block' : 'none';
   }
 
   draw(rendererParams, renderVideo = true, renderSkeleton = true) {
@@ -138,9 +120,6 @@ export class RendererCanvas2d {
     if (pose.keypoints != null) {
       this.drawKeypoints(pose.keypoints);
       this.drawSkeleton(pose.keypoints, pose.id, pose.keypoints3D);
-    }
-    if (pose.keypoints3D != null && params.STATE.modelConfig.render3D) {
-      this.drawKeypoints3D(pose.keypoints3D);
     }
   }
 
@@ -220,42 +199,5 @@ export class RendererCanvas2d {
         }
       }
     });
-  }
-
-  drawKeypoints3D(keypoints) {
-    const scoreThreshold = params.STATE.modelConfig.scoreThreshold || 0;
-    const pointsData =
-      keypoints.map(keypoint => ([-keypoint.x, -keypoint.y, -keypoint.z]));
-
-    const dataset =
-      new scatter.ScatterGL.Dataset([...pointsData, ...ANCHOR_POINTS]);
-
-    const keypointInd =
-      posedetection.util.getKeypointIndexBySide(params.STATE.model);
-    this.scatterGL.setPointColorer((i) => {
-      if (keypoints[i] == null || keypoints[i].score < scoreThreshold) {
-        // hide anchor points and low-confident points.
-        return '#ffffff';
-      }
-      if (i === 0) {
-        return '#ff0000' /* Red */;
-      }
-      if (keypointInd.left.indexOf(i) > -1) {
-        return '#00ff00' /* Green */;
-      }
-      if (keypointInd.right.indexOf(i) > -1) {
-        return '#ffa500' /* Orange */;
-      }
-    });
-
-    if (!this.scatterGLHasInitialized) {
-      this.scatterGL.render(dataset);
-    } else {
-      this.scatterGL.updateDataset(dataset);
-    }
-    const connections = posedetection.util.getAdjacentPairs(params.STATE.model);
-    const sequences = connections.map(pair => ({ indices: pair }));
-    this.scatterGL.setSequences(sequences);
-    this.scatterGLHasInitialized = true;
   }
 }

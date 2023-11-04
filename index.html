@@ -4,95 +4,27 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1.0, user-scalable=no">
-  <style>
-    body {
-      margin: 0;
-    }
-
-    #stats {
-      position: relative;
-      width: 100%;
-      height: 80px;
-    }
-
-    #main {
-      position: relative;
-      margin: 0;
-      display: grid;
-      grid-template-columns: auto auto;
-    }
-
-    #canvas-wrapper,
-    #scatter-gl-container {
-      position: relative;
-    }
-
-    #arrow-indicator {
-      text-align: center;
-    }
-
-    div.review {
-      display: grid;
-      justify-items: center;
-      gap: 10px;
-      grid-template-columns: 1fr 1fr;
-      grid-template-rows: auto auto;
-    }
-
-    .review-main {
-      grid-column-start: 1;
-      grid-column-end: 2;
-    }
-
-    .replay-chart {
-      grid-column-start: 2;
-      grid-column-end: 3;
-      max-width: 500px;
-      padding: 10px;
-    }
-
-    #replay-combined {
-      grid-column-start: 1;
-      grid-column-end: 2;
-    }
-
-    #replay-skeleton {
-      grid-column-start: 2;
-      grid-column-end: 3;
-    }
-
-    .beat-button,
-    .fit-button {
-      color: whitesmoke;
-      padding: 25px;
-    }
-
-    .beat-button {
-      background-color: black;
-    }
-
-    .fit-button {
-      background-color: darkblue;
-    }
-  </style>
+  <title>[Name TBD] Prototype</title>
+  <link rel="stylesheet" href="src/style.css" />
 </head>
 
 <body>
-  <div id="stats"></div>
   <div id="main">
+    <header>[Name TBD] Prototype</header>
 
-    <div class="container">
-      <div class="canvas-wrapper">
-        <canvas id="output"></canvas>
-        <video id="video" playsinline style="visibility: hidden; width: auto; height: auto;"></video>
+    <section id="record-section">
+      <div class="container">
+        <div class="canvas-wrapper">
+          <canvas id="output"></canvas>
+          <video id="video" playsinline style="visibility: hidden; width: auto; height: auto;"></video>
+        </div>
       </div>
-      <div id="scatter-gl-container"></div>
-    </div>
-    <div>
-      <canvas id="chart"></canvas>
-    </div>
+      <!-- Maybe add a select for different moves? -->
+      <button id="start-recording">Start Recording</button>
+      <button id="show-results">Show Results</button>
+    </section>
 
-    <div class="review">
+    <section id="review-section" class="review">
       <h1>Review</h1>
 
       <div class="review-main">
@@ -110,33 +42,44 @@
 
       <canvas id="replay-combined"></canvas>
       <canvas id="replay-skeleton"></canvas>
+    </section>
 
-    </div>
-    <div class="review-right">
-      <div>
-        <h1>best estimate</h1>
+    <section id="nerd-section">
+      <div class="review-right">
+        <h1>Stats for Nerds</h1>
         <div>
-          <p id="bpm">BPM</p>
-          <p id="score">SCORE</p>
-          <p id="offset">OFFSET</p>
-        </div>
-        <button id="action-rhythm">Estimate Rhythm</button>
-        <button id="action-generate-beats">Generate Frames On Beat</button>
-        <button id="action-generate-hits">Generate Best Fit Frames</button>
-        <button id="action-generate-any-matches-slow">Generate Any Fitting Positions (Slow)</button>
-        <button id="action-generate-any-matches-fast">Generate Any Fitting Positions (Fast)</button>
-        <h1>use for review</h1>
-        <div>
-          <label for="bpm-input">bpm</label>
-          <input id="bpm-input" type="number" />
-          <label for="offset-input">offset</label>
-          <input id="offset-input" type="number" />
-          <p id="score-output">SCORE</p>
+          <h2>best estimate</h2>
+          <div>
+            <p id="bpm">BPM</p>
+            <p id="score">SCORE</p>
+            <p id="offset">OFFSET</p>
+          </div>
+          <button id="action-rhythm">Estimate Rhythm</button>
+          <button id="action-generate-beats">Generate Frames On Beat</button>
+          <button id="action-generate-hits">Generate Best Fit Frames</button>
+          <button id="action-generate-any-matches-slow">Generate Any Fitting Positions (Slow)</button>
+          <button id="action-generate-any-matches-fast">Generate Any Fitting Positions (Fast)</button>
+          <h2>use for review</h2>
+          <div>
+            <label for="bpm-input">bpm</label>
+            <input id="bpm-input" type="number" />
+            <label for="offset-input">offset</label>
+            <input id="offset-input" type="number" />
+            <p id="score-output">SCORE</p>
+          </div>
         </div>
       </div>
-    </div>
-
+      <div>
+        <canvas id="chart"></canvas>
+      </div>
+      <div id="stats"></div>
+    </section>
   </div>
+  <nav>
+    <div class="navigation" id="go-to-home">🎦</div>
+    <div class="navigation" id="go-to-review">📺</div>
+    <div class="navigation" id="go-to-nerd">🤓</div>
+  </nav>
 </body>
 
 <script src="src/index.js" type="module"></script>

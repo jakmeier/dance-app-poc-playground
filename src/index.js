@@ -5,16 +5,18 @@ import { Camera } from './camera'
 import { RendererCanvas2d } from './renderer_canvas2d';
 import { I, leg_indx } from './util';
 import { Tracker as DanceTracker } from './dance';
-import { drawReview, setReviewMove, setReviewVideo } from './review';
+import { computeAndShowAnyMatches, drawReview, setReviewMove, setReviewVideo } from './review';
+import { Move } from './moves';
 
 let camera;
 let detector;
 let renderer;
-let danceTracker = new DanceTracker();
+let danceTracker;
 let done = false;
 let reviewStart;
 
 async function main() {
+    selectTab('record')
     const model = poseDetection.SupportedModels.BlazePose;
     const runtime = 'mediapipe';
     const config = {
@@ -31,19 +33,11 @@ async function main() {
     renderer = new RendererCanvas2d(canvas);
     renderer.flipSkeleton = true;
 
-    danceTracker.onStart =
-        () => {
-            reviewStart = new Date().getTime();
-            camera.startRecording(camera.video.srcObject);
-        }
-    // () => camera.startRecording(canvas.captureStream());
-    danceTracker.start(3000);
-
     loop();
 }
 
 async function loop() {
-    if (!done && danceTracker.isDone()) {
+    if (!done && danceTracker && danceTracker.isDone()) {
         done = true;
         const video = await camera.stopRecording();
         setReviewVideo(video, danceTracker.freezeForReview(reviewStart), reviewStart);
@@ -58,7 +52,7 @@ async function loop() {
     }
 
     // draw the review video, but only once the recording is done, not to slow down the FPS
-    if(done) {
+    if (done) {
         drawReview();
     }
 
@@ -85,6 +79,25 @@ async function loop() {
     );
 }
 
+function selectTab(id) {
+    const sections = document.querySelectorAll('section');
+    for (let i = 0; i < sections.length; i++) {
+        sections[i].classList.add('hidden');
+    }
+    document.getElementById(`${id}-section`).classList.remove('hidden');
+}
+
+function startTracker(move) {
+    danceTracker = new DanceTracker(move);
+    danceTracker.onStart =
+        () => {
+            reviewStart = new Date().getTime();
+            camera.startRecording(camera.video.srcObject);
+        }
+    // () => camera.startRecording(canvas.captureStream());
+    danceTracker.start(3000);
+}
+
 function analyzePose(pose, timestamp) {
 
     const scoreThreshold = STATE.modelConfig.scoreThreshold || 0;
@@ -100,7 +113,9 @@ function analyzePose(pose, timestamp) {
         || p[legs.right.ankle].score < scoreThreshold
     ) { return }
 
-    danceTracker.track(pose.keypoints, pose.keypoints3D, timestamp);
+    if (danceTracker) {
+        danceTracker.track(pose.keypoints, pose.keypoints3D, timestamp);
+    }
 }
 
 async function pose(image) {
@@ -127,5 +142,31 @@ function renderSkeletons(poses, image) {
     const rendererParams = [image, poses, STATE.isModelChanged];
     renderer.draw(rendererParams);
 }
+
+
+document.getElementById('start-recording').onclick =
+    function () {
+        if (danceTracker && !danceTracker.isDone()) {
+            console.log("already in progress");
+            return;
+        }
+        // TODO: Let user select the move
+        const move = Move.RunningMan();
+        startTracker(move);
+
+    };
+document.getElementById('show-results').onclick =
+    function () {
+        if (!danceTracker) {
+            alert("Must record first!");
+            return;
+        }
+        computeAndShowAnyMatches(20, 200, 500);
+        selectTab('review');
+
+    };
+document.getElementById('go-to-home').onclick = () => selectTab('record');
+document.getElementById('go-to-review').onclick = () => selectTab('review');
+document.getElementById('go-to-nerd').onclick = () => selectTab('nerd');
 
 main()
