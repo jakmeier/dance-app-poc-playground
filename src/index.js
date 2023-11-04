@@ -61,7 +61,7 @@ async function loop() {
 
     const frameTimestamp = new Date().getTime();
     // fix frame to allow async computations (or even put it in a web worker thread)
-    const image = camera.captureFrame();
+    const image = camera.captureFrame(isMirrored);
 
     // releases animation frame
     pose(image).then(
@@ -141,6 +141,7 @@ async function pose(image) {
 
 function renderSkeletons(poses, image) {
     const rendererParams = [image, poses, STATE.isModelChanged];
+    renderer.showAngles = showAngles;
     renderer.draw(rendererParams);
 }
 
@@ -170,5 +171,12 @@ document.getElementById('show-results').onclick =
 document.getElementById('go-to-home').onclick = () => selectTab('record');
 document.getElementById('go-to-review').onclick = () => selectTab('review');
 document.getElementById('go-to-nerd').onclick = () => selectTab('nerd');
+
+
+export let isMirrored = !!document.getElementById('is-mirrored').checked;
+let showAngles = !!document.getElementById('show-angles').checked;
+
+document.getElementById('is-mirrored').onchange = () => { isMirrored = document.getElementById('is-mirrored').checked; };
+document.getElementById('show-angles').onchange = () => { showAngles = document.getElementById('show-angles').checked; };
 
 main()

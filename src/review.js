@@ -2,6 +2,7 @@ import { RendererCanvas2d } from "./renderer_canvas2d";
 import { Chart } from 'chart.js/auto';
 import { leg_indx } from "./util";
 import { detectPositions, detectSteps } from "./moves_db";
+import { isMirrored } from "./index";
 
 const ENABLE_COMBO_RENDERER = false;
 const ENABLE_SKELETON_RENDERER = true;
@@ -66,6 +67,7 @@ export function drawReview() {
         if (frame) {
             const pose = { keypoints: frame.keypoints, keypoints3D: frame.keypoints };
             if (ENABLE_SKELETON_RENDERER) {
+                skeletonRenderer.flipSkeleton = !isMirrored;
                 skeletonRenderer.draw([videoOutput, [pose]], renderVideo = false);
             } else {
                 skeletonOutput.classList.add('hidden');
@@ -85,10 +87,17 @@ export function drawReview() {
             }
             reviewChart.update();
 
-            document.getElementById('arrow-indicator').innerHTML =
-                frame.bodyPos.facingDirection === 'left' ? '←'
-                    : frame.bodyPos.facingDirection === 'right' ? '→'
-                        : '↕';
+            if (isMirrored) {
+                document.getElementById('arrow-indicator').innerHTML =
+                    frame.bodyPos.facingDirection === 'left' ? '←'
+                        : frame.bodyPos.facingDirection === 'right' ? '→'
+                            : '↕';
+            } else {
+                document.getElementById('arrow-indicator').innerHTML =
+                    frame.bodyPos.facingDirection === 'right' ? '←'
+                        : frame.bodyPos.facingDirection === 'left' ? '→'
+                            : '↕';
+            }
             document.getElementById('confidence-indicator').innerHTML =
                 "confidence: " + confidenceString(frame);
 
