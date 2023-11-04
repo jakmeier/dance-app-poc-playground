@@ -49,8 +49,8 @@ nav {
 .review {
     display: grid;
     justify-items: center;
-    gap: 10px;
-    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+    grid-template-columns: auto auto;
 }
 
 .review h1,
@@ -61,11 +61,11 @@ nav {
 .replay-chart,
 #chart {
     background-color: white;
-    margin: 100px 10px;
+    margin: 150px 5px;
 }
 
 .replay-chart {
-    width: 480px;
+    width: 295px;
 }
 
 /*

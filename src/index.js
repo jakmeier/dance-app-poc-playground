@@ -5,7 +5,7 @@ import { Camera } from './camera'
 import { RendererCanvas2d } from './renderer_canvas2d';
 import { I, leg_indx } from './util';
 import { Tracker as DanceTracker } from './dance';
-import { computeAndShowAnyMatches, drawReview, setReviewMove, setReviewVideo } from './review';
+import { computeAndShowAnyMatches, drawReview, setReviewCursor, setReviewMove, setReviewVideo } from './review';
 import { Move } from './moves';
 
 let camera;
@@ -88,7 +88,8 @@ function selectTab(id) {
 }
 
 function startTracker(move) {
-    danceTracker = new DanceTracker(move);
+    const bpm = Number(document.getElementById("play-bpm-input").value || "90") || 90;
+    danceTracker = new DanceTracker(move, bpm);
     danceTracker.onStart =
         () => {
             reviewStart = new Date().getTime();
@@ -153,7 +154,6 @@ document.getElementById('start-recording').onclick =
         // TODO: Let user select the move
         const move = Move.RunningMan();
         startTracker(move);
-
     };
 document.getElementById('show-results').onclick =
     function () {
@@ -163,7 +163,9 @@ document.getElementById('show-results').onclick =
         }
         computeAndShowAnyMatches(20, 200, 500);
         selectTab('review');
-
+        document.getElementById('action-generate-hits').onclick();
+        // hack
+        document.getElementById('generated-buttons').children[0].onclick();
     };
 document.getElementById('go-to-home').onclick = () => selectTab('record');
 document.getElementById('go-to-review').onclick = () => selectTab('review');

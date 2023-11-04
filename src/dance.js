@@ -10,11 +10,11 @@ import { playBeat } from './sound';
 const CHART_ENABLED = false;
 
 export class Tracker {
-    constructor(move) {
+    constructor(move, bpm) {
         this.move = move;
         this.moveIndex = 0;
         this.history = [];
-        this.soundBpm = 90;
+        this.soundBpm = bpm;
         this.soundCounts = 4;
         this.beatsLeft = 16;
         this.onStart = () => { }
@@ -31,7 +31,7 @@ export class Tracker {
     }
 
     freezeForReview(reviewStart) {
-        let tracker = new Tracker(this.move);
+        let tracker = new Tracker(this.move, this.soundBpm);
         tracker.history = this.history.filter((item) => item.timestamp >= reviewStart + this.countTime());
         return tracker;
     }
@@ -227,13 +227,6 @@ export class Tracker {
             return fast;
         }
     }
-}
-
-function updateTime(time) {
-    const currentTime = new Date();
-    const timeElapsed = currentTime.getTime() - time.getTime();
-    time.setTime(currentTime);
-    return timeElapsed;
 }
 
 function pointDistance(p0, p1) {

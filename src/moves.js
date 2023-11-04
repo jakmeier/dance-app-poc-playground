@@ -61,7 +61,12 @@ export class Move {
         // TODO: what if the dance starts later? We shouldn't match garbage from
         // here on out, which probably happens if the first match is essentially
         // random.
-        const first = this.bestFit(history, 0, 0, 0, maxDt * this.onBeat.length);
+        let first = null;
+        let firstMaxDt = maxDt * this.onBeat.length;
+        while (first === null) {
+            first = this.bestFit(history, 0, 0, 0, firstMaxDt);
+            firstMaxDt *= 2;
+        }
         const errors = [first.error];
         const frames = [history[first.index]];
         const deltas = [];
@@ -71,7 +76,12 @@ export class Move {
         let i = first.index;
         const endOfHistory = history[history.length - 1].timestamp;
         for (let beat = 1; history[i].timestamp + minDt < endOfHistory; beat++) {
-            const next = this.bestFit(history, i, beat, minDt, maxDt);
+            let next = null;
+            while (next === null) {
+                next = this.bestFit(history, i, beat, minDt, maxDt);
+                i++;
+            }
+
             errors.push(next.error);
             deltas.push(next.start - prev);
             frames.push(history[next.index]);
@@ -127,15 +137,7 @@ export class BodyPosition {
         // infliction point. In other words, the range of hip azimuths during a
         // straight running man is about 180°.
         // Instead, let's try the shoulder. It seems more stable so far.
-        const shoulderAngle = azimuth(p[SHOULDER.left], p[SHOULDER.right]);
-        let directionCorrection = 1;
-        let facingDirection = 'unknown';
-        if (shoulderAngle < 45 && shoulderAngle > -45) {
-            facingDirection = 'left';
-            directionCorrection = -1;
-        } else {
-            facingDirection = 'right';
-        }
+        let { directionCorrection, facingDirection } = BodyPosition.keypointsToDirection(p);
         // Thighs are at zero when standing straight, positive when moving forward.
         const leftThigh = directionCorrection * signedPolarAngle(p[LEGS.left.hip], p[LEGS.left.knee]);
         const rightThigh = directionCorrection * signedPolarAngle(p[LEGS.right.hip], p[LEGS.right.knee]);
@@ -145,6 +147,19 @@ export class BodyPosition {
         return new BodyPosition(facingDirection)
             .rightLeg(rightThigh, rightShin)
             .leftLeg(leftThigh, leftShin);
+    }
+
+    static keypointsToDirection(p) {
+        const shoulderAngle = azimuth(p[SHOULDER.left], p[SHOULDER.right]);
+        let directionCorrection = 1;
+        let facingDirection = 'unknown';
+        if (shoulderAngle < 45 && shoulderAngle > -45) {
+            facingDirection = 'left';
+            directionCorrection = -1;
+        } else {
+            facingDirection = 'right';
+        }
+        return { directionCorrection, facingDirection };
     }
 
     leftLeg(thigh, shin) {
@@ -200,7 +215,7 @@ export class BodyPosition {
             assert(false, "no frames after start + minDt");
         }
         let smallestError = Infinity;
-        let smallestErrorIndex = start;
+        let smallestErrorIndex = null;
         const startTime = history[start].timestamp + minDt;
         const endTime = history[start].timestamp + maxDt;
         for (let i = start; i < history.length && history[i].timestamp <= endTime; i++) {
@@ -212,6 +227,9 @@ export class BodyPosition {
                 smallestError = error;
                 smallestErrorIndex = i;
             }
+        }
+        if (smallestErrorIndex === null) {
+            return null;
         }
         return {
             index: smallestErrorIndex,

@@ -5,6 +5,7 @@ import { detectPositions, detectSteps } from "./moves_db";
 
 const ENABLE_COMBO_RENDERER = false;
 const ENABLE_SKELETON_RENDERER = true;
+const POSITIONS_BANNER_W = 960;
 
 const videoOutput = document.getElementById('replay-raw');
 const combinedOutput = document.getElementById('replay-combined');
@@ -14,12 +15,12 @@ const reviewPositionsCanvasCtx = reviewPositionsCanvas.getContext('2d');
 
 let reviewChart;
 
-combinedOutput.width = 480;
-combinedOutput.height = 360;
-skeletonOutput.width = 480;
+combinedOutput.width = 640;
+combinedOutput.height = 480;
+skeletonOutput.width = 640;
 skeletonOutput.height = 480;
-reviewPositionsCanvas.width = 640;
-reviewPositionsCanvas.height = 25;
+reviewPositionsCanvas.width = POSITIONS_BANNER_W;
+reviewPositionsCanvas.height = 35;
 const comboRenderer = new RendererCanvas2d(combinedOutput);
 const skeletonRenderer = new RendererCanvas2d(skeletonOutput);
 
@@ -90,6 +91,10 @@ export function drawReview() {
                         : '↕';
             document.getElementById('confidence-indicator').innerHTML =
                 "confidence: " + confidenceString(frame);
+
+            reviewPositionsCanvasCtx.clearRect(0, 25, reviewPositionsCanvasCtx.canvas.width, 10);
+            reviewPositionsCanvasCtx.fillStyle = "#FFA500";
+            reviewPositionsCanvasCtx.fillRect(timestampToBannerX(frame.timestamp), 25, 10, 10);
         }
 
     }
@@ -290,24 +295,33 @@ export function computeAndShowAnyMatches(minDt, maxDt, minDtRepeat) {
     stepAnalysis(positions);
 };
 
+function timestampToBannerX(t) {
+    return (t - RECORDING.history[0].timestamp)
+        / (RECORDING.history[RECORDING.history.length - 1].timestamp - RECORDING.history[0].timestamp)
+        * POSITIONS_BANNER_W;
+}
+
 function stepAnalysis(positions) {
     console.log("Positions", positions);
-    const t2x = (t) => (t - RECORDING.videoStart) / (RECORDING.history[RECORDING.history.length - 1].timestamp - RECORDING.videoStart) * 640;
+    reviewPositionsCanvasCtx.clearRect(0, 0, reviewPositionsCanvasCtx.canvas.width, 25);
     for (p of positions) {
         const img = p.position.img;
-        const x = t2x(p.start);
-        if (p.facingDirection === 'left') {
-            reviewPositionsCanvasCtx.translate(15, 0);
+        const x = timestampToBannerX(p.start);
+        console.log("direction is", p.position.bodyPos.facingDirection);
+        if (p.position.bodyPos.facingDirection === 'left') {
+            reviewPositionsCanvasCtx.translate(x + 15, 0);
             reviewPositionsCanvasCtx.scale(-1, 1);
+            reviewPositionsCanvasCtx.drawImage(img, 0, 0, 15, 25);
+            reviewPositionsCanvasCtx.setTransform(1, 0, 0, 1, 0, 0);
+        } else {
+            reviewPositionsCanvasCtx.drawImage(img, x, 0, 15, 25);
         }
-        reviewPositionsCanvasCtx.drawImage(img, x, 0, 15, 25);
-        reviewPositionsCanvasCtx.setTransform(1, 0, 0, 1, 0, 0);
     }
     const steps = detectSteps(positions);
     console.log("Steps", steps);
 }
 
-function setReviewCursor(beat, ms, delta, error) {
+export function setReviewCursor(beat, ms, delta, error) {
     document.getElementById('delta-indicator').innerHTML = `${delta.toPrecision(4)}ms`;
     document.getElementById('error-indicator').innerHTML = `error score: ${error}`;
     videoOutput.currentTime = ms / 1000;

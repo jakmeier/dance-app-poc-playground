@@ -39,15 +39,17 @@ function detectPositions(history, minDt, maxDt, errorThreshold = Infinity) {
     const positions = [];
     const end = history[history.length - 1].timestamp - minDt;
     for (let i = 0; i < history.length && history[i].timestamp <= end;) {
-        let best = { error: Infinity };
+        let best = { error: Infinity, index: -1 };
         for (const position of POSITIONS) {
             const candidate = position.bodyPos.bestFit(history, i, minDt, maxDt);
-            if (candidate.error < best.error) {
+            if (candidate && candidate.error < best.error) {
                 best = candidate;
-                best.position = position;
+                best.position = {};
+                Object.assign(best.position, position);
+                best.position.bodyPos.facingDirection = history[best.index].bodyPos.facingDirection;
             }
         }
-        if (i !== best.index) {
+        if (best.index >= 0) {
             i = best.index;
             if (best.error <= errorThreshold) {
                 positions.push(best);
