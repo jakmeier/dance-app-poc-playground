@@ -56,16 +56,6 @@ export async function setupDatGui(urlParams) {
   const backendFromURL = urlParams.get('backend');
 
   switch (model) {
-    case 'posenet':
-      params.STATE.model = posedetection.SupportedModels.PoseNet;
-      break;
-    case 'movenet':
-      params.STATE.model = posedetection.SupportedModels.MoveNet;
-      if (type !== 'lightning' && type !== 'thunder' && type !== 'multipose') {
-        // Nulify invalid value.
-        type = null;
-      }
-      break;
     case 'blazepose':
       params.STATE.model = posedetection.SupportedModels.BlazePose;
       if (type !== 'full' && type !== 'lite' && type !== 'heavy') {
@@ -153,66 +143,6 @@ function showModelConfigs(folderController, type) {
   }
 }
 
-// The PoseNet model config folder contains options for PoseNet config
-// settings.
-function addPoseNetControllers(modelConfigFolder) {
-  params.STATE.modelConfig = {...params.POSENET_CONFIG};
-
-  modelConfigFolder.add(params.STATE.modelConfig, 'maxPoses', [1, 2, 3, 4, 5]);
-  modelConfigFolder.add(params.STATE.modelConfig, 'scoreThreshold', 0, 1);
-}
-
-// The MoveNet model config folder contains options for MoveNet config
-// settings.
-function addMoveNetControllers(modelConfigFolder, type) {
-  params.STATE.modelConfig = {...params.MOVENET_CONFIG};
-  params.STATE.modelConfig.type = type != null ? type : 'lightning';
-
-  // Set multipose defaults on initial page load.
-  if (params.STATE.modelConfig.type === 'multipose') {
-    params.STATE.modelConfig.enableTracking = true;
-    params.STATE.modelConfig.scoreThreshold = 0.2;
-  }
-
-  const typeController = modelConfigFolder.add(
-      params.STATE.modelConfig, 'type', ['lightning', 'thunder', 'multipose']);
-  typeController.onChange(type => {
-    // Set isModelChanged to true, so that we don't render any result during
-    // changing models.
-    params.STATE.isModelChanged = true;
-    if (type === 'multipose') {
-      // Defaults to enable tracking for multi pose.
-      if (enableTrackingController) {
-        enableTrackingController.setValue(true);
-      }
-      // Defaults to a lower scoreThreshold for multi pose.
-      if (scoreThresholdController) {
-        scoreThresholdController.setValue(0.2);
-      }
-    } else {
-      enableTrackingController.setValue(false);
-    }
-  });
-
-  const customModelController =
-      modelConfigFolder.add(params.STATE.modelConfig, 'customModel');
-  customModelController.onFinishChange(_ => {
-    params.STATE.isModelChanged = true;
-  });
-
-  scoreThresholdController =
-      modelConfigFolder.add(params.STATE.modelConfig, 'scoreThreshold', 0, 1);
-
-  enableTrackingController = modelConfigFolder.add(
-      params.STATE.modelConfig,
-      'enableTracking',
-  );
-  enableTrackingController.onChange(_ => {
-    // Set isModelChanged to true, so that we don't render any result during
-    // changing models.
-    params.STATE.isModelChanged = true;
-  })
-}
 
 // The BlazePose model config folder contains options for BlazePose config
 // settings.

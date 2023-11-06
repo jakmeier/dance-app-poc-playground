@@ -4,7 +4,7 @@ import { STATE } from './params'
 import { Camera } from './camera'
 import { RendererCanvas2d } from './renderer_canvas2d';
 import { I, leg_indx } from './util';
-import { Tracker as DanceTracker } from './dance';
+import { Tracker } from './dance';
 import { computeAndShowAnyMatches, drawReview, setReviewCursor, setReviewMove, setReviewVideo } from './review';
 import { Move } from './moves';
 
@@ -89,7 +89,7 @@ function selectTab(id) {
 
 function startTracker(move) {
     const bpm = Number(document.getElementById("play-bpm-input").value || "90") || 90;
-    danceTracker = new DanceTracker(move, bpm);
+    danceTracker = new Tracker(move, bpm);
     danceTracker.onStart =
         () => {
             reviewStart = new Date().getTime();
