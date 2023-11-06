@@ -68,17 +68,6 @@ nav {
     width: 295px;
 }
 
-/*
-#replay-combined {
-    grid-column-start: 1;
-    grid-column-end: 2;
-}
-
-#replay-skeleton {
-    grid-column-start: 2;
-    grid-column-end: 3;
-} */
-
 .beat-button,
 .fit-button {
     color: whitesmoke;
@@ -112,4 +101,28 @@ button {
     font-size: xx-large;
     padding: 15px 50px;
     margin: 30px;
+}
+
+@media (max-width: 960px) {
+    body {
+        width: 640px;
+    }
+
+    .navigation {
+        margin: auto 50px;
+    }
+
+    .review {
+        grid-template-columns: auto;
+    }
+
+    .review h1,
+    .review-main {
+        grid-column: 1 / 2;
+    }
+
+    .replay-chart,
+    #chart {
+        margin: 10px 5px;
+    }
 }

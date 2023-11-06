@@ -6,7 +6,7 @@ import { isMirrored } from "./index";
 
 const ENABLE_COMBO_RENDERER = false;
 const ENABLE_SKELETON_RENDERER = true;
-const POSITIONS_BANNER_W = 960;
+const POSITIONS_BANNER_W = Math.min(document.documentElement.clientWidth, 960);
 
 const videoOutput = document.getElementById('replay-raw');
 const combinedOutput = document.getElementById('replay-combined');
