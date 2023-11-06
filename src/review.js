@@ -6,13 +6,15 @@ import { isMirrored } from "./index";
 
 const ENABLE_COMBO_RENDERER = false;
 const ENABLE_SKELETON_RENDERER = true;
+const POSITION_IMAGE_WIDTH = 30;
+const POSITION_MARKER_WIDTH = 5;
 const POSITIONS_BANNER_W = Math.min(document.documentElement.clientWidth, 960);
 
 const videoOutput = document.getElementById('replay-raw');
 const combinedOutput = document.getElementById('replay-combined');
 const skeletonOutput = document.getElementById('replay-skeleton');
-const reviewPositionsCanvas = document.getElementById('review-positions-canvas');
-const reviewPositionsCanvasCtx = reviewPositionsCanvas.getContext('2d');
+const reviewPositions = document.getElementById('review-positions');
+const reviewPositionsMarker = document.getElementById('review-positions-marker');
 
 let reviewChart;
 
@@ -20,8 +22,6 @@ combinedOutput.width = 640;
 combinedOutput.height = 480;
 skeletonOutput.width = 640;
 skeletonOutput.height = 480;
-reviewPositionsCanvas.width = POSITIONS_BANNER_W;
-reviewPositionsCanvas.height = 35;
 const comboRenderer = new RendererCanvas2d(combinedOutput);
 const skeletonRenderer = new RendererCanvas2d(skeletonOutput);
 
@@ -101,9 +101,7 @@ export function drawReview() {
             document.getElementById('confidence-indicator').innerHTML =
                 "confidence: " + confidenceString(frame);
 
-            reviewPositionsCanvasCtx.clearRect(0, 25, reviewPositionsCanvasCtx.canvas.width, 10);
-            reviewPositionsCanvasCtx.fillStyle = "#FFA500";
-            reviewPositionsCanvasCtx.fillRect(timestampToBannerX(frame.timestamp), 25, 10, 10);
+            reviewPositionsMarker.style.left = timestampToBannerX(frame.timestamp, POSITION_MARKER_WIDTH) + 'px';
         }
 
     }
@@ -304,30 +302,44 @@ export function computeAndShowAnyMatches(minDt, maxDt, minDtRepeat) {
     stepAnalysis(positions);
 };
 
-function timestampToBannerX(t) {
+function timestampToBannerX(t, imageSize) {
     return (t - RECORDING.history[0].timestamp)
         / (RECORDING.history[RECORDING.history.length - 1].timestamp - RECORDING.history[0].timestamp)
-        * POSITIONS_BANNER_W;
+        * (POSITIONS_BANNER_W - imageSize / 2)
+        - imageSize / 2;
 }
 
 function stepAnalysis(positions) {
     console.log("Positions", positions);
-    reviewPositionsCanvasCtx.clearRect(0, 0, reviewPositionsCanvasCtx.canvas.width, 25);
+    reviewPositions.innerHTML = '';
+    reviewPositions.appendChild(reviewPositionsMarker);
     for (p of positions) {
         const img = p.position.img;
-        const x = timestampToBannerX(p.start);
-        console.log("direction is", p.position.bodyPos.facingDirection);
+        const x = timestampToBannerX(p.start, POSITION_IMAGE_WIDTH);
+        // console.log("direction is", p.position.bodyPos.facingDirection);
+        const newImg = document.createElement('img');
+        newImg.src = img.src;
+        newImg.style.left = x + 'px';
+        newImg.classList.add('review-position');
         if (p.position.bodyPos.facingDirection === 'left') {
-            reviewPositionsCanvasCtx.translate(x + 15, 0);
-            reviewPositionsCanvasCtx.scale(-1, 1);
-            reviewPositionsCanvasCtx.drawImage(img, 0, 0, 15, 25);
-            reviewPositionsCanvasCtx.setTransform(1, 0, 0, 1, 0, 0);
-        } else {
-            reviewPositionsCanvasCtx.drawImage(img, x, 0, 15, 25);
+            newImg.classList.add('flipped');
         }
+        reviewPositions.appendChild(newImg);
     }
+
     const steps = detectSteps(positions);
     console.log("Steps", steps);
+    for (step of steps) {
+        const left = timestampToBannerX(step.start, 0);
+        const right = timestampToBannerX(step.end, 0);
+        const div = document.createElement('div');
+        div.classList.add('review-step');
+        div.style.left = left + 'px';
+        div.style.width = right - left + 'px';
+        // native mouse-over
+        div.title = step.name;
+        reviewPositions.appendChild(div);
+    }
 }
 
 export function setReviewCursor(beat, ms, delta, error) {

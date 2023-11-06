@@ -72,14 +72,21 @@ function detectSteps(positions) {
         steps_loop:
         for (const key in STEPS) {
             const step_positions = STEPS[key];
-            for (let j = 0; j < step_positions.length && i + j < positions.length; j++) {
+            if (i + step_positions.length >= positions.length) {
+                continue;
+            }
+            for (let j = 0; j < step_positions.length; j++) {
                 if (step_positions[j] !== positions[i + j].position.id) {
                     // one position is wrong, try next step
                     continue steps_loop;
                 }
             }
             // All positions match! Add it to result and move the pointer.
-            steps.push(key);
+            steps.push({
+                name: key,
+                start: positions[i].start,
+                end: positions[i+step_positions.length].start,
+            });
             i += step_positions.length;
             continue outer_loop;
         }
