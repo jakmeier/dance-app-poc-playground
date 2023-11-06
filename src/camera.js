@@ -113,6 +113,15 @@ export class Camera {
 
     return new Blob(this.recordedBlobs, { type: "video/webm" });
   }
+
+  // ends the webcam, will need to setup again to resume
+  stopCamera() {
+    this.video.srcObject.getTracks().forEach(track => {
+      if (track.readyState === 'live') {
+        track.stop();
+      }
+    });
+  }
 }
 
 function onRecorderError() {

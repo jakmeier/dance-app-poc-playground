@@ -41,6 +41,8 @@ async function loop() {
         done = true;
         const video = await camera.stopRecording();
         setReviewVideo(video, danceTracker.freezeForReview(reviewStart), reviewStart);
+        // TODO: would be nice to stop camera while reviewing
+        // camera.stopCamera();
     }
 
     if (camera.video.readyState < 2) {
