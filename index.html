@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1.0, user-scalable=no">
   <title>[Name TBD] Prototype</title>
   <link rel="stylesheet" href="src/style.css" />
+  <link rel="stylesheet" media="screen" href="https://fontlibrary.org//face/simple-print" type="text/css" />
 </head>
 
 <body>
@@ -23,7 +24,15 @@
         <label for="play-bpm-input">BPM</label>
         <input id="play-bpm-input" type="number" value="90" />
       </p>
-      <!-- Maybe add a select for different moves? -->
+      <div class="select-container">
+        <select id="step-select">
+          <option value="0">Running Man</option>
+          <option value="1">Double Running Man</option>
+          <option value="2">Reverse Running Man</option>
+          <option value="3">Double-Turn Running Man</option>
+          <option value="4">Freestyle</option>
+        </select>
+      </div>
       <button id="start-recording">Start Recording</button>
       <button id="show-results">Show Results</button>
     </section>
@@ -37,7 +46,7 @@
         <p id="delta-indicator"></p>
         <p id="error-indicator"></p>
         <p id="confidence-indicator"></p>
-        <div id="generated-buttons"></div>
+        <div id="generated-buttons" class="hidden"></div>
         <div id="review-positions">
           <div id="review-positions-marker"></div>
         </div>

@@ -1,5 +1,6 @@
 import { leg_indx, shoulder_indx } from "./util";
 import { signedPolarAngle, polarAngle, azimuth, assert } from './util';
+import { IMAGES, loadImage } from "./images";
 
 export class Move {
     constructor() {
@@ -16,10 +17,50 @@ export class Move {
     // The classic.
     static RunningMan() {
         return new Move()
-            .then(new BodyPosition().rightLeg(70, 120))
             .then(new BodyPosition().rightLeg(40, 40).leftLeg(-20, 0))
             .then(new BodyPosition().leftLeg(70, 120))
             .then(new BodyPosition().rightLeg(-20, 0).leftLeg(40, 40))
+            .then(new BodyPosition().rightLeg(70, 120))
+            ;
+    }
+
+    static DoubleRunningMan() {
+        return new Move()
+            .then(new BodyPosition().rightLeg(40, 40).leftLeg(-20, 0))
+            .then(new BodyPosition().leftLeg(70, 120))
+            .then(new BodyPosition().rightLeg(40, 40).leftLeg(-20, 0))
+            .then(new BodyPosition().leftLeg(70, 120))
+            .then(new BodyPosition().rightLeg(-20, 0).leftLeg(40, 40))
+            .then(new BodyPosition().rightLeg(70, 120))
+            .then(new BodyPosition().rightLeg(-20, 0).leftLeg(40, 40))
+            .then(new BodyPosition().rightLeg(70, 120))
+            ;
+    }
+
+    static ReverseRunningMan() {
+        return new Move()
+            .then(new BodyPosition().rightLeg(40, 40).leftLeg(-20, 0))
+            .then(new BodyPosition().rightLeg(70, 120))
+            .then(new BodyPosition().rightLeg(-20, 0).leftLeg(40, 40))
+            .then(new BodyPosition().leftLeg(70, 120))
+            ;
+    }
+
+    static DoubleTurnRunningMan() {
+        return new Move()
+            .then(new BodyPosition().rightLeg(40, 40).leftLeg(-20, 0))
+            .then(new BodyPosition().leftLeg(70, 120))
+            .then(new BodyPosition().rightLeg(-20, 0).leftLeg(40, 40))
+            .then(new BodyPosition().rightLeg(70, 120))
+            .then(new BodyPosition().rightLeg(-20, 0).leftLeg(40, 40))
+            .then(new BodyPosition().rightLeg(70, 120))
+            //turn
+            .then(new BodyPosition().rightLeg(40, 40).leftLeg(-20, 0))
+            .then(new BodyPosition().leftLeg(70, 120))
+            .then(new BodyPosition().rightLeg(-20, 0).leftLeg(40, 40))
+            .then(new BodyPosition().rightLeg(70, 120))
+            .then(new BodyPosition().rightLeg(-20, 0).leftLeg(40, 40))
+            .then(new BodyPosition().rightLeg(70, 120))
             ;
     }
 
@@ -57,6 +98,9 @@ export class Move {
             return;
         }
 
+        // hack to make code work with `stepAnalysis`
+        const hack = [];
+
         // First move can have an offset between zero and a full cycle time.
         // TODO: what if the dance starts later? We shouldn't match garbage from
         // here on out, which probably happens if the first match is essentially
@@ -67,6 +111,19 @@ export class Move {
             first = this.bestFit(history, 0, 0, 0, firstMaxDt);
             firstMaxDt *= 2;
         }
+
+        const firstPosition = this.onBeat[0].namedPosition();
+        firstPosition.bodyPos.facingDirection = BodyPosition.keypointsToDirection(history[first.index].keypoints).facingDirection;
+        hack.push(
+            {
+                start: first.start,
+                index: first.index,
+                error: first.error,
+                position: firstPosition,
+            }
+        );
+
+
         const errors = [first.error];
         const frames = [history[first.index]];
         const deltas = [];
@@ -85,11 +142,24 @@ export class Move {
             errors.push(next.error);
             deltas.push(next.start - prev);
             frames.push(history[next.index]);
+
+            const position = this.onBeat[beat % this.onBeat.length].namedPosition();
+            position.bodyPos.facingDirection = BodyPosition.keypointsToDirection(history[next.index].keypoints).facingDirection;
+            hack.push(
+                {
+                    start: next.start,
+                    index: next.index,
+                    error: next.error,
+                    position: position,
+                }
+            );
+
             prev = next.start;
             i = next.index;
         }
 
         const averageError = errors.reduce((a, b) => a + b) / errors.length;
+
 
         return {
             offset: first.start - history[0].timestamp,
@@ -99,6 +169,7 @@ export class Move {
             frames,
             errors,
             deltas,
+            positions: hack,
         }
     }
 
@@ -237,8 +308,44 @@ export class BodyPosition {
             error: smallestError,
         };
     }
+
+    /**
+     * Hack to avoid merging moves_db::STEPS with how steps were defined for the tracker
+     */
+    namedPosition() {
+        if (this.rightThigh === 70 && this.rightShin === 120 && this.leftThigh === 0 && this.leftShin === 0) {
+            return POSITIONS[0];
+        }
+        if (this.rightThigh === 40 && this.rightShin === 40 && this.leftThigh === -20 && this.leftShin === 0) {
+            return POSITIONS[1];
+        }
+        if (this.leftThigh === 70 && this.leftShin === 120 && this.rightThigh === 0 && this.rightShin === 0) {
+            return POSITIONS[2];
+        }
+        if (this.leftThigh === 40 && this.leftShin === 40 && this.rightThigh === -20 && this.rightShin === 0) {
+            return POSITIONS[3];
+        }
+        console.error("body position unknown", position);
+        return null;
+    }
 }
 
 function interpolate(a, b, ratio) {
     return a * ratio + b * (1 - ratio);
+}
+
+export const POSITIONS = [
+    pos("right-up", "Right Leg Up", IMAGES.between_steps, new BodyPosition().rightLeg(70, 120)),
+    pos("right-forward", "Right Leg Forward", IMAGES.step_wide, new BodyPosition().rightLeg(40, 40).leftLeg(-20, 0)),
+    pos("left-up", "Left Leg Up", IMAGES.between_steps, new BodyPosition().leftLeg(70, 120)),
+    pos("left-forward", "Left Leg Forward", IMAGES.step_wide, new BodyPosition().rightLeg(-20, 0).leftLeg(40, 40)),
+];
+
+function pos(id, name, img, bodyPos) {
+    return {
+        id,
+        name,
+        img: loadImage(img),
+        bodyPos,
+    };
 }

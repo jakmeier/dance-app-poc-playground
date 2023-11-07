@@ -1,18 +1,7 @@
+import { POSITIONS } from './moves';
+
 module.exports = { detectPositions, detectSteps };
 
-const { BodyPosition } = require('./moves');
-
-const IMAGES = {
-    between_steps: require("url:../assets/image/between_steps.png"),
-    step_wide: require("url:../assets/image/step_wide.png"),
-};
-
-const POSITIONS = [
-    pos("right-up", "Right Leg Up", IMAGES.between_steps, new BodyPosition().rightLeg(70, 120)),
-    pos("right-forward", "Right Leg Forward", IMAGES.step_wide, new BodyPosition().rightLeg(40, 40).leftLeg(-20, 0)),
-    pos("left-up", "Left Leg Up", IMAGES.between_steps, new BodyPosition().leftLeg(70, 120)),
-    pos("left-forward", "Left Leg Forward", IMAGES.step_wide, new BodyPosition().rightLeg(-20, 0).leftLeg(40, 40)),
-];
 
 const STEPS =
 {
@@ -85,7 +74,7 @@ function detectSteps(positions) {
             steps.push({
                 name: key,
                 start: positions[i].start,
-                end: positions[i+step_positions.length].start,
+                end: positions[i + step_positions.length].start,
             });
             i += step_positions.length;
             continue outer_loop;
@@ -94,19 +83,4 @@ function detectSteps(positions) {
         i++;
     }
     return steps;
-}
-
-function pos(id, name, img, bodyPos) {
-    return {
-        id,
-        name,
-        img: loadImage(img),
-        bodyPos,
-    };
-}
-
-function loadImage(url) {
-    const img = new window.Image();
-    img.src = url;
-    return img;
 }

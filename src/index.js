@@ -154,8 +154,30 @@ document.getElementById('start-recording').onclick =
             console.log("already in progress");
             return;
         }
-        // TODO: Let user select the move
-        const move = Move.RunningMan();
+        const selectElement = document.getElementById('step-select');
+        let move;
+        switch (selectElement.value) {
+            case "0":
+                move = Move.RunningMan();
+                break;
+            case "1":
+                move = Move.DoubleRunningMan();
+                break;
+            case "2":
+                move = Move.ReverseRunningMan();
+                break;
+            case "3":
+                move = Move.DoubleTurnRunningMan();
+                break;
+            case "4":
+                // doesn't really matter which move we track, it's ignored in results
+                move = Move.RunningMan();
+                break;
+            default:
+                alert("invalid selection");
+                return;
+        }
+        selectElement.readOnly = true;
         startTracker(move);
     };
 document.getElementById('show-results').onclick =
@@ -164,11 +186,14 @@ document.getElementById('show-results').onclick =
             alert("Must record first!");
             return;
         }
-        computeAndShowAnyMatches(20, 200, 500);
+        const selectElement = document.getElementById('step-select');
+        const freestyle = "4" === selectElement.value;
+        computeAndShowAnyMatches(20, 200, 500, freestyle);
         selectTab('review');
-        document.getElementById('action-generate-hits').onclick();
+        // document.getElementById('action-generate-hits').onclick();
         // hack
-        document.getElementById('generated-buttons').children[0].onclick();
+        // document.getElementById('generated-buttons').children[0].onclick();
+        selectElement.readOnly = false;
     };
 document.getElementById('go-to-home').onclick = () => selectTab('record');
 document.getElementById('go-to-review').onclick = () => selectTab('review');

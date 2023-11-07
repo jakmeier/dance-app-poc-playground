@@ -280,24 +280,36 @@ document.getElementById('action-generate-any-matches-slow').onclick =
 document.getElementById('action-generate-any-matches-fast').onclick =
     () => computeAndShowAnyMatches(10, 200, 500);
 
-export function computeAndShowAnyMatches(minDt, maxDt, minDtRepeat) {
-    const positions = detectPositions(RECORDING.history, minDt, maxDt);
-    console.log("positions", positions);
+export function computeAndShowAnyMatches(minDt, maxDt, minDtRepeat, freestyle = true) {
+    // `positions` must have { start, index, error, position { id, name, bodyPos, img } }
+    let positions;
+    if (freestyle) {
+        positions = detectPositions(RECORDING.history, minDt, maxDt);
 
-    const numBefore = positions.length;
-    for (let i = positions.length - 1; i > 0; i--) {
-        if (positions[i].position.id === positions[i - 1].position.id) {
-            if (positions[i - 1].start - positions[i].start < minDtRepeat) {
-                if (positions[i].error > positions[i - 1].error) {
-                    positions.splice(i, 1);
-                } else {
-                    positions.splice(i - 1, 1);
+
+        const numBefore = positions.length;
+        for (let i = positions.length - 1; i > 0; i--) {
+            if (positions[i].position.id === positions[i - 1].position.id) {
+                if (positions[i - 1].start - positions[i].start < minDtRepeat) {
+                    if (positions[i].error > positions[i - 1].error) {
+                        positions.splice(i, 1);
+                    } else {
+                        positions.splice(i - 1, 1);
+                    }
                 }
             }
         }
+        const numAfter = positions.length;
+        console.log(`found ${numBefore} positions, de-deduplicated to ${numAfter}`);
+
+    } else {
+        // TODO: take selected BPM into consideration
+        // TODO: fix facing direction
+        const estimate = RECORDING.tracker.computeBestFits();
+        // added the `positions` field just to make this work... spaghetti prototype, yay
+        positions = estimate.positions;
     }
-    const numAfter = positions.length;
-    console.log(`found ${numBefore} positions, de-deduplicated to ${numAfter}`);
+    console.log("positions", positions);
 
     stepAnalysis(positions);
 };
@@ -313,6 +325,7 @@ function stepAnalysis(positions) {
     console.log("Positions", positions);
     reviewPositions.innerHTML = '';
     reviewPositions.appendChild(reviewPositionsMarker);
+    let prev = 0;
     for (p of positions) {
         const img = p.position.img;
         const x = timestampToBannerX(p.start, POSITION_IMAGE_WIDTH);
@@ -324,6 +337,10 @@ function stepAnalysis(positions) {
         if (p.position.bodyPos.facingDirection === 'left') {
             newImg.classList.add('flipped');
         }
+        const frameTime = RECORDING.videoIntroMs + RECORDING.history[p.index].timestamp - RECORDING.history[0].timestamp;
+        const delta = prev ? 0.0 : p.start - prev;
+        prev = p.start;
+        newImg.onclick = () => setReviewCursor(p.index, frameTime, delta, p.error);
         reviewPositions.appendChild(newImg);
     }
 
@@ -336,6 +353,7 @@ function stepAnalysis(positions) {
         div.classList.add('review-step');
         div.style.left = left + 'px';
         div.style.width = right - left + 'px';
+        div.innerText = step.name;
         // native mouse-over
         div.title = step.name;
         reviewPositions.appendChild(div);
