@@ -20,11 +20,8 @@
           <video id="video" playsinline style="visibility: hidden; width: auto; height: auto;"></video>
         </div>
       </div>
-      <p>
-        <label for="play-bpm-input">BPM</label>
-        <input id="play-bpm-input" type="number" value="90" />
-      </p>
-      <div class="select-container">
+      <p class="select-container">
+        <label for="step-select">Step</label>
         <select id="step-select">
           <option value="0">Running Man</option>
           <option value="1">Double Running Man</option>
@@ -32,7 +29,18 @@
           <option value="3">Double-Turn Running Man</option>
           <option value="4">Freestyle</option>
         </select>
-      </div>
+      </p>
+      <p>
+        <label for="play-bpm-input">BPM</label>
+        <input id="play-bpm-input" type="number" value="90" />
+      </p>
+      <p>
+        <label for="half-speed-input"
+          title="With halved speed, you only move on full beats, not the off-beats. Tracking will be inaccurate if you don't set this correctly.">
+          Half Speed
+        </label>
+        <input id="half-speed-input" type="checkbox" checked />
+      </p>
       <button id="start-recording">Start Recording</button>
       <button id="show-results">Show Results</button>
     </section>

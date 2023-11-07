@@ -33,8 +33,7 @@ function detectPositions(history, minDt, maxDt, errorThreshold = Infinity) {
             const candidate = position.bodyPos.bestFit(history, i, minDt, maxDt);
             if (candidate && candidate.error < best.error) {
                 best = candidate;
-                best.position = {};
-                Object.assign(best.position, position);
+                best.position = position.clone();
                 best.position.bodyPos.facingDirection = history[best.index].bodyPos.facingDirection;
             }
         }

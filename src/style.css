@@ -60,14 +60,14 @@ nav {
 
 #review-positions {
     position: relative;
-    overflow: hidden;
-    /* 30px position image, 5px marker, 30px step text */
-    height: 75px;
+    overflow: scroll;
+    /* 60px position image, 5px marker, 50px step text */
+    height: 115px;
 }
 
 #review-positions-marker {
     position: absolute;
-    top: 30px;
+    top: 50px;
     z-index: 1;
     height: 5px;
     width: 5px;
@@ -76,8 +76,8 @@ nav {
 
 .review-position {
     position: absolute;
-    height: 30px;
-    /* width: 20px */
+    height: 60px;
+    /* width: 40px */
 }
 
 .flipped {
@@ -88,11 +88,11 @@ nav {
 .review-step {
     position: absolute;
     bottom: 0px;
-    height: 36px;
+    height: 46px;
     background-color: #0000009c;
     border: dotted black 2px;
     color: white;
-    font-size: 16px;
+    font-size: 20px;
     font-family: 'SimplePrintRegular', sans-serif;
 }
 
@@ -128,9 +128,23 @@ nav {
 
 button {
     padding: 10px;
-    font-size: inherit;
-    background-color: darkblue;
+}
+
+input[type=checkbox] {
+    width: 25px;
+    height: 25px;
+}
+
+#record-section {
     color: aliceblue;
+    font-size: 20px;
+}
+
+#play-bpm-input,
+#step-select,
+button {
+    color: aliceblue;
+    background-color: darkblue;
     border: none;
     border-radius: 5px;
 }
@@ -139,6 +153,13 @@ button {
     font-size: xx-large;
     padding: 15px 50px;
     margin: 30px;
+}
+
+#play-bpm-input,
+#step-select {
+    text-align: center;
+    height: 50px;
+    font-size: 30px;
 }
 
 @media (max-width: 960px) {

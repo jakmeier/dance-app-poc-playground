@@ -106,10 +106,11 @@ export class Move {
         // here on out, which probably happens if the first match is essentially
         // random.
         let first = null;
+        const totalTime = history[history.length - 1].timestamp - history[0].timestamp;
         let firstMaxDt = maxDt * this.onBeat.length;
-        while (first === null) {
+        while (first === null && firstMaxDt < totalTime) {
             first = this.bestFit(history, 0, 0, 0, firstMaxDt);
-            firstMaxDt *= 2;
+            firstMaxDt *= 1.2;
         }
 
         const firstPosition = this.onBeat[0].namedPosition();
@@ -144,7 +145,8 @@ export class Move {
             frames.push(history[next.index]);
 
             const position = this.onBeat[beat % this.onBeat.length].namedPosition();
-            position.bodyPos.facingDirection = BodyPosition.keypointsToDirection(history[next.index].keypoints).facingDirection;
+            // the bodyPos from above is the synthetic one, set the real direction for presentation purposes
+            position.bodyPos.facingDirection = history[next.index].bodyPos.facingDirection;
             hack.push(
                 {
                     start: next.start,
@@ -224,11 +226,15 @@ export class BodyPosition {
         const shoulderAngle = azimuth(p[SHOULDER.left], p[SHOULDER.right]);
         let directionCorrection = 1;
         let facingDirection = 'unknown';
-        if (shoulderAngle < 45 && shoulderAngle > -45) {
+        if (shoulderAngle <= 45 && shoulderAngle >= -45) {
             facingDirection = 'left';
             directionCorrection = -1;
-        } else {
+        } else if (shoulderAngle < 135 && shoulderAngle > 45) {
+            facingDirection = 'back';
+        } else if (shoulderAngle <= -135 || shoulderAngle >= 135) {
             facingDirection = 'right';
+        } else if (shoulderAngle < -45 && shoulderAngle > -135) {
+            facingDirection = 'front';
         }
         return { directionCorrection, facingDirection };
     }
@@ -314,16 +320,16 @@ export class BodyPosition {
      */
     namedPosition() {
         if (this.rightThigh === 70 && this.rightShin === 120 && this.leftThigh === 0 && this.leftShin === 0) {
-            return POSITIONS[0];
+            return POSITIONS[0].clone();
         }
         if (this.rightThigh === 40 && this.rightShin === 40 && this.leftThigh === -20 && this.leftShin === 0) {
-            return POSITIONS[1];
+            return POSITIONS[1].clone();
         }
         if (this.leftThigh === 70 && this.leftShin === 120 && this.rightThigh === 0 && this.rightShin === 0) {
-            return POSITIONS[2];
+            return POSITIONS[2].clone();
         }
         if (this.leftThigh === 40 && this.leftShin === 40 && this.rightThigh === -20 && this.rightShin === 0) {
-            return POSITIONS[3];
+            return POSITIONS[3].clone();
         }
         console.error("body position unknown", position);
         return null;
@@ -334,6 +340,25 @@ function interpolate(a, b, ratio) {
     return a * ratio + b * (1 - ratio);
 }
 
+class NamedPosition {
+    constructor(id, name, img, bodyPos) {
+        this.id = id;
+        this.name = name;
+        this.img = img;
+        this.bodyPos = bodyPos;
+    }
+
+    /// mostly shallow copy, for example because of the included image, but bodyPos is copied one layer deeper
+    clone() {
+        return new NamedPosition(
+            this.id,
+            this.name,
+            this.img,
+            Object.assign({}, this.bodyPos),
+        );
+    }
+}
+
 export const POSITIONS = [
     pos("right-up", "Right Leg Up", IMAGES.between_steps, new BodyPosition().rightLeg(70, 120)),
     pos("right-forward", "Right Leg Forward", IMAGES.step_wide, new BodyPosition().rightLeg(40, 40).leftLeg(-20, 0)),
@@ -342,10 +367,5 @@ export const POSITIONS = [
 ];
 
 function pos(id, name, img, bodyPos) {
-    return {
-        id,
-        name,
-        img: loadImage(img),
-        bodyPos,
-    };
+    return new NamedPosition(id, name, loadImage(img), bodyPos);
 }

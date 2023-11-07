@@ -6,9 +6,9 @@ import { isMirrored } from "./index";
 
 const ENABLE_COMBO_RENDERER = false;
 const ENABLE_SKELETON_RENDERER = true;
-const POSITION_IMAGE_WIDTH = 30;
+const POSITION_IMAGE_WIDTH = 40;
 const POSITION_MARKER_WIDTH = 5;
-const POSITIONS_BANNER_W = Math.min(document.documentElement.clientWidth, 960);
+const POSITIONS_BANNER_W = Math.min(document.documentElement.clientWidth, 960) - POSITION_IMAGE_WIDTH / 2;
 
 const videoOutput = document.getElementById('replay-raw');
 const combinedOutput = document.getElementById('replay-combined');
@@ -101,7 +101,7 @@ export function drawReview() {
             document.getElementById('confidence-indicator').innerHTML =
                 "confidence: " + confidenceString(frame);
 
-            reviewPositionsMarker.style.left = timestampToBannerX(frame.timestamp, POSITION_MARKER_WIDTH) + 'px';
+            reviewPositionsMarker.style.left = timestampToBannerX(frame.timestamp, POSITION_MARKER_WIDTH) + POSITION_IMAGE_WIDTH / 2 + 'px';
         }
 
     }
@@ -286,7 +286,6 @@ export function computeAndShowAnyMatches(minDt, maxDt, minDtRepeat, freestyle = 
     if (freestyle) {
         positions = detectPositions(RECORDING.history, minDt, maxDt);
 
-
         const numBefore = positions.length;
         for (let i = positions.length - 1; i > 0; i--) {
             if (positions[i].position.id === positions[i - 1].position.id) {
@@ -303,13 +302,13 @@ export function computeAndShowAnyMatches(minDt, maxDt, minDtRepeat, freestyle = 
         console.log(`found ${numBefore} positions, de-deduplicated to ${numAfter}`);
 
     } else {
-        // TODO: take selected BPM into consideration
         // TODO: fix facing direction
-        const estimate = RECORDING.tracker.computeBestFits();
+        const estimate = RECORDING.tracker.move.matchToRecording(RECORDING.history, minDt, maxDt);
         // added the `positions` field just to make this work... spaghetti prototype, yay
         positions = estimate.positions;
     }
     console.log("positions", positions);
+    console.log("directions", positions.map((p) => p.position.bodyPos.facingDirection));
 
     stepAnalysis(positions);
 };
@@ -317,12 +316,11 @@ export function computeAndShowAnyMatches(minDt, maxDt, minDtRepeat, freestyle = 
 function timestampToBannerX(t, imageSize) {
     return (t - RECORDING.history[0].timestamp)
         / (RECORDING.history[RECORDING.history.length - 1].timestamp - RECORDING.history[0].timestamp)
-        * (POSITIONS_BANNER_W - imageSize / 2)
+        * POSITIONS_BANNER_W
         - imageSize / 2;
 }
 
 function stepAnalysis(positions) {
-    console.log("Positions", positions);
     reviewPositions.innerHTML = '';
     reviewPositions.appendChild(reviewPositionsMarker);
     let prev = 0;
@@ -334,7 +332,7 @@ function stepAnalysis(positions) {
         newImg.src = img.src;
         newImg.style.left = x + 'px';
         newImg.classList.add('review-position');
-        if (p.position.bodyPos.facingDirection === 'left') {
+        if (isMirrored ? p.position.bodyPos.facingDirection === 'left' : p.position.bodyPos.facingDirection === 'right') {
             newImg.classList.add('flipped');
         }
         const frameTime = RECORDING.videoIntroMs + RECORDING.history[p.index].timestamp - RECORDING.history[0].timestamp;

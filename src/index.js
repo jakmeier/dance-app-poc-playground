@@ -15,6 +15,14 @@ let danceTracker;
 let done = false;
 let reviewStart;
 
+const selectElement = document.getElementById('step-select');
+const halfSpeedInput = document.getElementById('half-speed-input');
+export let isMirrored = document.getElementById('is-mirrored').checked;
+let showAngles = document.getElementById('show-angles').checked;
+
+document.getElementById('is-mirrored').onchange = () => { isMirrored = document.getElementById('is-mirrored').checked; };
+document.getElementById('show-angles').onchange = () => { showAngles = document.getElementById('show-angles').checked; };
+
 async function main() {
     selectTab('record')
     const model = poseDetection.SupportedModels.BlazePose;
@@ -154,7 +162,6 @@ document.getElementById('start-recording').onclick =
             console.log("already in progress");
             return;
         }
-        const selectElement = document.getElementById('step-select');
         let move;
         switch (selectElement.value) {
             case "0":
@@ -186,9 +193,13 @@ document.getElementById('show-results').onclick =
             alert("Must record first!");
             return;
         }
-        const selectElement = document.getElementById('step-select');
         const freestyle = "4" === selectElement.value;
-        computeAndShowAnyMatches(20, 200, 500, freestyle);
+        const targetBpm = danceTracker.soundBpm;
+        // bpm counts full beats, which corresponds to half speed, at full speed
+        // we track two moves per beat
+        const factor = halfSpeedInput.checked ? 1 : 0.5;
+        const dt = factor * 60_000 / targetBpm;
+        computeAndShowAnyMatches(0.75 * dt, 1.25 * dt, dt, freestyle);
         selectTab('review');
         // document.getElementById('action-generate-hits').onclick();
         // hack
@@ -199,11 +210,5 @@ document.getElementById('go-to-home').onclick = () => selectTab('record');
 document.getElementById('go-to-review').onclick = () => selectTab('review');
 document.getElementById('go-to-nerd').onclick = () => selectTab('nerd');
 
-
-export let isMirrored = !!document.getElementById('is-mirrored').checked;
-let showAngles = !!document.getElementById('show-angles').checked;
-
-document.getElementById('is-mirrored').onchange = () => { isMirrored = document.getElementById('is-mirrored').checked; };
-document.getElementById('show-angles').onchange = () => { showAngles = document.getElementById('show-angles').checked; };
 
 main()
