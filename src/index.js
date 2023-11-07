@@ -7,6 +7,8 @@ import { I, leg_indx } from './util';
 import { Tracker } from './dance';
 import { computeAndShowAnyMatches, drawReview, setReviewCursor, setReviewMove, setReviewVideo } from './review';
 import { Move } from './moves';
+import { listSongs } from './musiclib';
+import { loadSong, stopSong } from './sound';
 
 let camera;
 let detector;
@@ -16,6 +18,10 @@ let done = false;
 let reviewStart;
 
 const selectElement = document.getElementById('step-select');
+const songSelect = document.getElementById('song-select');
+const timerElement = document.getElementById('timer');
+const inputView = document.getElementById('input-container');
+const liveRecording = document.getElementById('live-recording-container');
 const halfSpeedInput = document.getElementById('half-speed-input');
 export let isMirrored = document.getElementById('is-mirrored').checked;
 let showAngles = document.getElementById('show-angles').checked;
@@ -40,6 +46,14 @@ async function main() {
     canvas.height = camera.video.height;
     renderer = new RendererCanvas2d(canvas);
     renderer.flipSkeleton = true;
+
+    const songs = listSongs();
+    for (let i = 0; i < songs.length; i++) {
+        const option = document.createElement('option');
+        option.value = i + 1;
+        option.innerText = songs[i].name;
+        songSelect.appendChild(option);
+    }
 
     loop();
 }
@@ -97,16 +111,24 @@ function selectTab(id) {
     document.getElementById(`${id}-section`).classList.remove('hidden');
 }
 
-function startTracker(move) {
-    const bpm = Number(document.getElementById("play-bpm-input").value || "90") || 90;
-    danceTracker = new Tracker(move, bpm);
+function startTracker(move, bpm, beats) {
+    danceTracker = new Tracker(move, bpm, beats);
     danceTracker.onStart =
         () => {
             reviewStart = new Date().getTime();
             camera.startRecording(camera.video.srcObject);
         }
     // () => camera.startRecording(canvas.captureStream());
-    danceTracker.start(3000);
+
+    const i = Number(songSelect.value);
+    if (i === 0) {
+        danceTracker.start(3000);
+    } else {
+        loadSong(listSongs()[i - 1].fullName).then(
+            (song) =>
+                danceTracker.start(3000, song)
+        );
+    }
 }
 
 function analyzePose(pose, timestamp) {
@@ -185,7 +207,11 @@ document.getElementById('start-recording').onclick =
                 return;
         }
         selectElement.readOnly = true;
-        startTracker(move);
+        const bpm = Number(document.getElementById("play-bpm-input").value || "90") || 90;
+        const beats = Number(document.getElementById("num-beats-input").value || "16") || 16;
+        startTracker(move, bpm, beats);
+        inputView.classList.add('hidden');
+        liveRecording.classList.remove('hidden');
     };
 document.getElementById('show-results').onclick =
     function () {
@@ -210,5 +236,21 @@ document.getElementById('go-to-home').onclick = () => selectTab('record');
 document.getElementById('go-to-review').onclick = () => selectTab('review');
 document.getElementById('go-to-nerd').onclick = () => selectTab('nerd');
 
+document.getElementById('stop-recording').onclick = function () {
+    stopSong();
+    liveRecording.classList.add('hidden');
+    inputView.classList.remove('hidden');
+};
+
+songSelect.onchange = function () {
+    const i = Number(songSelect.value);
+    if (i === 0) {
+        document.getElementById("play-bpm-input").readOnly = false;
+    } else {
+        const bpmInput = document.getElementById("play-bpm-input");
+        bpmInput.value = listSongs()[i - 1].bpm;
+        bpmInput.readOnly = true;
+    }
+};
 
 main()

@@ -1,17 +1,24 @@
 const context = new AudioContext();
+let currentSongSource;
 
 // stores all decoded audio buffers
 export const SOUNDS = {
     numbers: [],
     click: null,
+    // { name: file }, lazy loaded
+    songs: {},
 }
 init();
 
 export function playSound(decodedAudio) {
-    source = context.createBufferSource();
-    source.buffer = decodedAudio;
-    source.connect(context.destination);
-    source.start();
+    currentSongSource = context.createBufferSource();
+    currentSongSource.buffer = decodedAudio;
+    currentSongSource.connect(context.destination);
+    currentSongSource.start();
+}
+
+export function stopSong() {
+    currentSongSource.stop();
 }
 
 export function playBeat(bpm, numBeats, numCounts, tracker) {
@@ -64,6 +71,17 @@ async function loadSound(url) {
         .then(data => data.arrayBuffer())
         .then(arrayBuffer => context.decodeAudioData(arrayBuffer))
         .catch(onError);
+}
+
+export async function loadSong(fullname) {
+    if (!SOUNDS.songs[fullname]) {
+        SOUNDS.songs[fullname] =
+            await fetch(`/assets/sound/musiclib/${fullname}`)
+                .then(data => data.arrayBuffer())
+                .then(arrayBuffer => context.decodeAudioData(arrayBuffer))
+                .catch(onError);
+    }
+    return SOUNDS.songs[fullname];
 }
 
 function onError(e) {

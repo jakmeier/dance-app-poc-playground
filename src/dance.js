@@ -3,27 +3,31 @@ import { onBeatScore } from './rhythm';
 import { leg_indx } from './util';
 import { Chart } from 'chart.js/auto';
 import zoomPlugin from 'chartjs-plugin-zoom';
-import { playBeat } from './sound';
+import { playBeat, playSound } from './sound';
 
 // let lastUpdate = 0;
 
 const CHART_ENABLED = false;
 
 export class Tracker {
-    constructor(move, bpm) {
+    constructor(move, bpm, beats = 16, counts = 4) {
         this.move = move;
         this.moveIndex = 0;
         this.history = [];
         this.soundBpm = bpm;
-        this.soundCounts = 4;
-        this.beatsLeft = 16;
+        this.soundCounts = counts;
+        this.beatsLeft = beats;
         this.onStart = () => { }
     }
 
-    start(ms) {
+    start(ms, song) {
         setTimeout(
             () => {
-                playBeat(this.soundBpm, this.beatsLeft, this.soundCounts, this);
+                if (song) {
+                    playSound(song);
+                } else {
+                    playBeat(this.soundBpm, this.beatsLeft, this.soundCounts, this);
+                }
                 this.onStart();
             },
             ms

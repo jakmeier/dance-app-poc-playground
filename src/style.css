@@ -140,8 +140,8 @@ input[type=checkbox] {
     font-size: 20px;
 }
 
-#play-bpm-input,
-#step-select,
+input[type=number],
+select,
 button {
     color: aliceblue;
     background-color: darkblue;
@@ -155,11 +155,12 @@ button {
     margin: 30px;
 }
 
-#play-bpm-input,
-#step-select {
+input[type=number],
+select {
     text-align: center;
     height: 50px;
     font-size: 30px;
+    width: 400px;
 }
 
 @media (max-width: 960px) {
