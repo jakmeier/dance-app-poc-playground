@@ -5,7 +5,7 @@
   "scripts": {
     "watch": "NODE_ENV=development parcel index.html assets/sound/musiclib/* --no-hmr",
     "build-debug": "NODE_ENV=development parcel index.html --no-hmr --public-url ./",
-    "build": "NODE_ENV=production parcel build index.html --public-url ./",
+    "build": "NODE_ENV=production parcel build index.html assets/sound/musiclib/* --public-url ./ --no-scope-hoist",
     "copy-assets": "cp -r assets/* dist",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

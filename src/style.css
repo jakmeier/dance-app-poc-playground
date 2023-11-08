@@ -165,11 +165,12 @@ select {
 
 @media (max-width: 960px) {
     body {
-        width: 640px;
+        width: 100vw;
     }
 
     .navigation {
-        margin: auto 50px;
+        font-size: 50px;
+        margin: auto 10px;
     }
 
     .review {
@@ -184,5 +185,18 @@ select {
     .replay-chart,
     #chart {
         margin: 10px 5px;
+    }
+
+    input[type="number"],
+    select {
+        width: 200px;
+        height: 30px;
+        font-size: 20px;
+    }
+
+    #record-section button {
+        font-size: 20px;
+        padding: 5px 10px;
+        margin: 10px;
     }
 }

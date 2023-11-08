@@ -76,7 +76,7 @@ async function loadSound(url) {
 export async function loadSong(fullname) {
     if (!SOUNDS.songs[fullname]) {
         SOUNDS.songs[fullname] =
-            await fetch(`/assets/sound/musiclib/${fullname}`)
+            await fetch(`./assets/sound/musiclib/${fullname}`)
                 .then(data => data.arrayBuffer())
                 .then(arrayBuffer => context.decodeAudioData(arrayBuffer))
                 .catch(onError);

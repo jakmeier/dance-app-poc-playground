@@ -8,7 +8,8 @@ const ENABLE_COMBO_RENDERER = false;
 const ENABLE_SKELETON_RENDERER = true;
 const POSITION_IMAGE_WIDTH = 40;
 const POSITION_MARKER_WIDTH = 5;
-const POSITIONS_BANNER_W = Math.min(document.documentElement.clientWidth, 960) - POSITION_IMAGE_WIDTH / 2;
+
+let POSITIONS_BANNER_W = Math.min(document.documentElement.clientWidth, 960) - POSITION_IMAGE_WIDTH / 2;
 
 const videoOutput = document.getElementById('replay-raw');
 const combinedOutput = document.getElementById('replay-combined');
@@ -321,10 +322,12 @@ function timestampToBannerX(t, imageSize) {
 }
 
 function stepAnalysis(positions) {
+    POSITIONS_BANNER_W = Math.max(POSITIONS_BANNER_W, positions.length * POSITION_IMAGE_WIDTH);
     reviewPositions.innerHTML = '';
     reviewPositions.appendChild(reviewPositionsMarker);
     let prev = 0;
-    for (p of positions) {
+    for (let i = 0; i < positions.length; i++) {
+        const p = positions[i];
         const img = p.position.img;
         const x = timestampToBannerX(p.start, POSITION_IMAGE_WIDTH);
         // console.log("direction is", p.position.bodyPos.facingDirection);
@@ -336,7 +339,7 @@ function stepAnalysis(positions) {
             newImg.classList.add('flipped');
         }
         const frameTime = RECORDING.videoIntroMs + RECORDING.history[p.index].timestamp - RECORDING.history[0].timestamp;
-        const delta = prev ? 0.0 : p.start - prev;
+        const delta = prev ? p.start - prev : 0.0;
         prev = p.start;
         newImg.onclick = () => setReviewCursor(p.index, frameTime, delta, p.error);
         reviewPositions.appendChild(newImg);

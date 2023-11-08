@@ -48,17 +48,26 @@ export class Move {
 
     static DoubleTurnRunningMan() {
         return new Move()
+            // normal
             .then(new BodyPosition().rightLeg(40, 40).leftLeg(-20, 0))
             .then(new BodyPosition().leftLeg(70, 120))
             .then(new BodyPosition().rightLeg(-20, 0).leftLeg(40, 40))
             .then(new BodyPosition().rightLeg(70, 120))
+            // double
             .then(new BodyPosition().rightLeg(-20, 0).leftLeg(40, 40))
             .then(new BodyPosition().rightLeg(70, 120))
-            //turn
+            // turn
             .then(new BodyPosition().rightLeg(40, 40).leftLeg(-20, 0))
             .then(new BodyPosition().leftLeg(70, 120))
+            // normal  (starting left)
             .then(new BodyPosition().rightLeg(-20, 0).leftLeg(40, 40))
             .then(new BodyPosition().rightLeg(70, 120))
+            // double
+            .then(new BodyPosition().rightLeg(40, 40).leftLeg(-20, 0))
+            .then(new BodyPosition().leftLeg(70, 120))
+            .then(new BodyPosition().rightLeg(40, 40).leftLeg(-20, 0))
+            .then(new BodyPosition().leftLeg(70, 120))
+            // turn
             .then(new BodyPosition().rightLeg(-20, 0).leftLeg(40, 40))
             .then(new BodyPosition().rightLeg(70, 120))
             ;
@@ -114,13 +123,14 @@ export class Move {
         }
 
         const firstPosition = this.onBeat[0].namedPosition();
-        firstPosition.bodyPos.facingDirection = BodyPosition.keypointsToDirection(history[first.index].keypoints).facingDirection;
+        firstPosition.bodyPos.facingDirection = history[first.index].bodyPos.facingDirection;
         hack.push(
             {
                 start: first.start,
                 index: first.index,
                 error: first.error,
                 position: firstPosition,
+                delta: 0,
             }
         );
 
@@ -152,6 +162,7 @@ export class Move {
                     start: next.start,
                     index: next.index,
                     error: next.error,
+                    delta: next.start - prev,
                     position: position,
                 }
             );

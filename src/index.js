@@ -19,7 +19,6 @@ let reviewStart;
 
 const selectElement = document.getElementById('step-select');
 const songSelect = document.getElementById('song-select');
-const timerElement = document.getElementById('timer');
 const inputView = document.getElementById('input-container');
 const liveRecording = document.getElementById('live-recording-container');
 const halfSpeedInput = document.getElementById('half-speed-input');
@@ -63,6 +62,7 @@ async function loop() {
         done = true;
         const video = await camera.stopRecording();
         setReviewVideo(video, danceTracker.freezeForReview(reviewStart), reviewStart);
+        showInputView();
         // TODO: would be nice to stop camera while reviewing
         // camera.stopCamera();
     }
@@ -125,8 +125,9 @@ function startTracker(move, bpm, beats) {
         danceTracker.start(3000);
     } else {
         loadSong(listSongs()[i - 1].fullName).then(
-            (song) =>
-                danceTracker.start(3000, song)
+            (song) => {
+                danceTracker.start(3000, song);
+            }
         );
     }
 }
@@ -210,8 +211,7 @@ document.getElementById('start-recording').onclick =
         const bpm = Number(document.getElementById("play-bpm-input").value || "90") || 90;
         const beats = Number(document.getElementById("num-beats-input").value || "16") || 16;
         startTracker(move, bpm, beats);
-        inputView.classList.add('hidden');
-        liveRecording.classList.remove('hidden');
+        showLiveRecording();
     };
 document.getElementById('show-results').onclick =
     function () {
@@ -238,8 +238,7 @@ document.getElementById('go-to-nerd').onclick = () => selectTab('nerd');
 
 document.getElementById('stop-recording').onclick = function () {
     stopSong();
-    liveRecording.classList.add('hidden');
-    inputView.classList.remove('hidden');
+    showInputView();
 };
 
 songSelect.onchange = function () {
@@ -252,5 +251,15 @@ songSelect.onchange = function () {
         bpmInput.readOnly = true;
     }
 };
+
+function showLiveRecording() {
+    inputView.classList.add('hidden');
+    liveRecording.classList.remove('hidden');
+}
+
+function showInputView() {
+    liveRecording.classList.add('hidden');
+    inputView.classList.remove('hidden');
+}
 
 main()

@@ -8,6 +8,7 @@ import { playBeat, playSound } from './sound';
 // let lastUpdate = 0;
 
 const CHART_ENABLED = false;
+const timerElement = document.getElementById('timer');
 
 export class Tracker {
     constructor(move, bpm, beats = 16, counts = 4) {
@@ -21,18 +22,46 @@ export class Tracker {
     }
 
     start(ms, song) {
+        if (song) {
+            playSound(song);
+            this.scheduleBeatCalls(ms);
+            // onStart called internally
+        } else {
+            setTimeout(
+                () => {
+                    playBeat(this.soundBpm, this.beatsLeft, this.soundCounts, this);
+                    this.onStart();
+                },
+                ms
+            );
+        }
+        for (let i = 0; i * 1000 <= ms; i++) {
+            const t = Math.round(ms / 1000) - i;
+            setTimeout(
+                () => timerElement.innerHTML = `Get Ready! (${t})`,
+                i * 1000,
+            )
+        }
+    }
+
+    // can also be done by metronome, but for songs without metronome sound, use this
+    scheduleBeatCalls(initDelay = 0) {
+        const ms = 60_000 / this.soundBpm;
+        const cb = () => {
+            this.beat(new Date().getTime());
+            if (this.isDone()) {
+                clearInterval(this.intervalHandle);
+            }
+        }
         setTimeout(
             () => {
-                if (song) {
-                    playSound(song);
-                } else {
-                    playBeat(this.soundBpm, this.beatsLeft, this.soundCounts, this);
-                }
+                this.intervalHandle = setInterval(cb, ms);
                 this.onStart();
             },
-            ms
+            initDelay,
         );
     }
+
 
     freezeForReview(reviewStart) {
         let tracker = new Tracker(this.move, this.soundBpm);
@@ -107,6 +136,7 @@ export class Tracker {
     }
 
     beat(scheduledTime) {
+        timerElement.innerHTML = `${this.beatsLeft} beats`;
         let oldCount = 0;
         for (const frame of this.history) {
             oldCount += 1;
