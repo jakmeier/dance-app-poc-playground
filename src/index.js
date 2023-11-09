@@ -16,6 +16,8 @@ let renderer;
 let danceTracker;
 let done = false;
 let reviewStart;
+let delayToRecording = 3000;
+
 
 const selectElement = document.getElementById('step-select');
 const songSelect = document.getElementById('song-select');
@@ -29,23 +31,6 @@ document.getElementById('is-mirrored').onchange = () => { isMirrored = document.
 document.getElementById('show-angles').onchange = () => { showAngles = document.getElementById('show-angles').checked; };
 
 async function main() {
-    selectTab('record')
-    const model = poseDetection.SupportedModels.BlazePose;
-    const runtime = 'mediapipe';
-    const config = {
-        runtime, modelType: STATE.modelConfig.type, solutionPath:
-            `https://cdn.jsdelivr.net/npm/@mediapipe/pose@${mpPose.VERSION}`
-    };
-    detector = await poseDetection.createDetector(model, config);
-
-
-    camera = await Camera.setup(STATE.camera);
-    const canvas = document.getElementById('output');
-    canvas.width = camera.video.width;
-    canvas.height = camera.video.height;
-    renderer = new RendererCanvas2d(canvas);
-    renderer.flipSkeleton = true;
-
     const songs = listSongs();
     for (let i = 0; i < songs.length; i++) {
         const option = document.createElement('option');
@@ -54,6 +39,36 @@ async function main() {
         songSelect.appendChild(option);
     }
 
+    selectTab('record')
+    const model = poseDetection.SupportedModels.BlazePose;
+    const runtime = 'mediapipe';
+    const config = {
+        runtime, modelType: STATE.modelConfig.type, solutionPath:
+            `https://cdn.jsdelivr.net/npm/@mediapipe/pose@${mpPose.VERSION}`
+    };
+    detector = await poseDetection.createDetector(model, config);
+}
+
+async function startCameraAndLoop() {
+    camera = await Camera.setup(STATE.camera);
+    startRenderLoop();
+}
+
+async function renderFromVideo(videoUrl) {
+    camera = await Camera.setupVirtual(videoUrl);
+    startRenderLoop();
+}
+
+function startRenderLoop() {
+    const canvas = document.getElementById('output');
+    canvas.width = video.width;
+    canvas.height = video.height;
+
+    document.getElementById("start-camera").classList.add("hidden");
+    document.getElementById("camera-canvas-wrapper").classList.remove("hidden");
+
+    renderer = new RendererCanvas2d(document.getElementById('output'));
+    renderer.flipSkeleton = true;
     loop();
 }
 
@@ -112,21 +127,29 @@ function selectTab(id) {
 }
 
 function startTracker(move, bpm, beats) {
-    danceTracker = new Tracker(move, bpm, beats);
+    const i = Number(songSelect.value);
+    const isMetronome = i === 0;
+    const counts = isMetronome ? 4 : 0;
+
+    danceTracker = new Tracker(move, bpm, beats, counts);
     danceTracker.onStart =
         () => {
             reviewStart = new Date().getTime();
-            camera.startRecording(camera.video.srcObject);
+            if (camera.video.srcObject) {
+                camera.startRecording(camera.video.srcObject);
+            } else {
+                // camera.startRecording(camera.video.captureStream())
+                camera.startRecording(document.getElementById('output').captureStream())
+            }
         }
     // () => camera.startRecording(canvas.captureStream());
 
-    const i = Number(songSelect.value);
-    if (i === 0) {
-        danceTracker.start(3000);
+    if (isMetronome) {
+        danceTracker.start(delayToRecording);
     } else {
         loadSong(listSongs()[i - 1].fullName).then(
             (song) => {
-                danceTracker.start(3000, song);
+                danceTracker.start(delayToRecording, song);
             }
         );
     }
@@ -236,6 +259,8 @@ document.getElementById('go-to-home').onclick = () => selectTab('record');
 document.getElementById('go-to-review').onclick = () => selectTab('review');
 document.getElementById('go-to-nerd').onclick = () => selectTab('nerd');
 
+document.getElementById('start-camera').onclick = () => startCameraAndLoop();
+
 document.getElementById('stop-recording').onclick = function () {
     stopSong();
     showInputView();
@@ -260,6 +285,23 @@ function showLiveRecording() {
 function showInputView() {
     liveRecording.classList.add('hidden');
     inputView.classList.remove('hidden');
+}
+
+
+document.getElementById('video-upload').onchange = function (event) {
+    if (event.target.files && event.target.files[0]) {
+        var reader = new FileReader();
+
+        reader.onload = function (e) {
+            delayToRecording = 0;
+            renderFromVideo(e.target.result);
+            document.getElementById('start-recording').onclick();
+            selectTab('record');
+        }.bind(this)
+
+        reader.readAsDataURL(event.target.files[0]);
+
+    }
 }
 
 main()

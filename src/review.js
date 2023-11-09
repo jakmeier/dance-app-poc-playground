@@ -338,6 +338,9 @@ function stepAnalysis(positions) {
         if (isMirrored ? p.position.bodyPos.facingDirection === 'left' : p.position.bodyPos.facingDirection === 'right') {
             newImg.classList.add('flipped');
         }
+        if (p.error > 1.0) {
+            newImg.classList.add('weak');
+        }
         const frameTime = RECORDING.videoIntroMs + RECORDING.history[p.index].timestamp - RECORDING.history[0].timestamp;
         const delta = prev ? p.start - prev : 0.0;
         prev = p.start;

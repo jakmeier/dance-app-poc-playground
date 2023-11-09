@@ -15,7 +15,10 @@
 
     <section id="record-section">
       <div class="container">
-        <div class="canvas-wrapper">
+        <div id="video-start-button">
+          <button id="start-camera">Start Camera</button>
+        </div>
+        <div id="camera-canvas-wrapper" class="hidden">
           <canvas id="output"></canvas>
           <video id="video" playsinline style="visibility: hidden; width: auto; height: auto;"></video>
         </div>
@@ -92,6 +95,8 @@
           <input type="checkbox" id="show-angles" name="show-angles" value="0">
           <label for="show-angles">Show Angles</label><br>
         </p>
+        <h1>Analyze Video</h1>
+        <input type="file" accept="video/*" id="video-upload" />
         <h1>Stats for Nerds</h1>
         <div>
           <h2>best estimate</h2>

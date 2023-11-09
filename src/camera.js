@@ -72,11 +72,41 @@ export class Camera {
     camera.hiddenCanvas.width = videoWidth;
     camera.hiddenCanvas.height = videoHeight;
 
-    const canvasContainer = document.querySelector('.canvas-wrapper');
+    const canvasContainer = document.querySelector('#camera-canvas-wrapper');
     canvasContainer.style = `width: ${videoWidth}px; height: ${videoHeight}px`;
 
     return camera;
   }
+
+  /**
+ * Initiate a Camera instance from a Video URL instead of a real camera.
+ */
+  static async setupVirtual(videoUrl) {
+    const camera = new Camera();
+    camera.video.src = videoUrl;
+
+    await new Promise((resolve) => {
+      camera.video.onloadedmetadata = () => {
+        resolve(video);
+      };
+    });
+
+    camera.video.play();
+
+    const videoWidth = camera.video.videoWidth;
+    const videoHeight = camera.video.videoHeight;
+    // Must set below two lines, otherwise video element doesn't show.
+    camera.video.width = videoWidth;
+    camera.video.height = videoHeight;
+    camera.hiddenCanvas.width = videoWidth;
+    camera.hiddenCanvas.height = videoHeight;
+
+    const canvasContainer = document.querySelector('#camera-canvas-wrapper');
+    canvasContainer.style = `width: ${videoWidth}px; height: ${videoHeight}px`;
+
+    return camera;
+  }
+
 
   captureFrame(isMirrored = true) {
     this.hiddenCanvasContext.save();
@@ -116,11 +146,13 @@ export class Camera {
 
   // ends the webcam, will need to setup again to resume
   stopCamera() {
-    this.video.srcObject.getTracks().forEach(track => {
-      if (track.readyState === 'live') {
-        track.stop();
-      }
-    });
+    if (this.video.srcObject) {
+      this.video.srcObject.getTracks().forEach(track => {
+        if (track.readyState === 'live') {
+          track.stop();
+        }
+      });
+    }
   }
 }
 
