@@ -85,6 +85,8 @@ export function drawReview() {
                 reviewChart.data.datasets[1].data[i] = errorScore.rightThigh;
                 reviewChart.data.datasets[2].data[i] = errorScore.leftShin;
                 reviewChart.data.datasets[3].data[i] = errorScore.rightShin;
+                reviewChart.data.datasets[4].data[i] = errorScore.leftFullLeg;
+                reviewChart.data.datasets[5].data[i] = errorScore.rightFullLeg;
             }
             reviewChart.update();
 
@@ -172,9 +174,9 @@ function createReviewChart(numPositions) {
         xLabels.push(`pos${i}`);
     }
     const datasets =
-        ["leftThigh", "rightThigh", "leftShin", "rightShin"]
+        ["leftThigh", "rightThigh", "leftShin", "rightShin", "leftLeg", "rightLeg"]
             .map(
-                (label) => ({ label, data: [1, 1, 1, 1] })
+                (label) => ({ label, data: [1, 1, 1, 1, 1, 1] })
             );
 
     const config = {
@@ -309,9 +311,11 @@ export function computeAndShowAnyMatches(minDt, maxDt, minDtRepeat, freestyle = 
         positions = estimate.positions;
     }
     console.log("positions", positions);
-    console.log("directions", positions.map((p) => p.position.facingDirection));
+    if (positions) {
+        console.log("directions", positions.map((p) => p.position.facingDirection));
+        stepAnalysis(positions);
+    }
 
-    stepAnalysis(positions);
 };
 
 function timestampToBannerX(t, imageSize) {
@@ -343,7 +347,7 @@ function stepAnalysis(positions) {
         const frameTime = RECORDING.videoIntroMs + RECORDING.history[p.index].timestamp - RECORDING.history[0].timestamp;
         const delta = prev ? p.start - prev : 0.0;
         prev = p.start;
-        newImg.onclick = () => setReviewCursor(p.index, frameTime, delta, p.error);
+        newImg.onclick = () => setReviewCursor(i, frameTime, delta, p.error);
         reviewPositions.appendChild(newImg);
     }
 

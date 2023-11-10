@@ -123,6 +123,10 @@ export class Move {
             firstMaxDt *= 1.2;
         }
 
+        if (first === null) {
+            return [];
+        }
+
         const firstPosition = this.onBeat[0].clone();
         firstPosition.facingDirection = history[first.index].bodyPos.facingDirection;
         hack.push(
@@ -229,12 +233,15 @@ export class BodyPosition {
         // Thighs are at zero when standing straight, positive when moving forward.
         const leftThigh = directionCorrection * signedPolarAngle(p[LEGS.left.hip], p[LEGS.left.knee]);
         const rightThigh = directionCorrection * signedPolarAngle(p[LEGS.right.hip], p[LEGS.right.knee]);
+        // Full legs are the same as thigh but measured all the way down to the ankle
+        const leftLeg = directionCorrection * signedPolarAngle(p[LEGS.left.hip], p[LEGS.left.ankle]);
+        const rightLeg = directionCorrection * signedPolarAngle(p[LEGS.right.hip], p[LEGS.right.ankle]);
         // Shins are relative to thighs, at zero when stretched, positive when contracted.
         const leftShin = leftThigh - directionCorrection * polarAngle(p[LEGS.left.knee], p[LEGS.left.ankle]);
         const rightShin = rightThigh - directionCorrection * polarAngle(p[LEGS.right.knee], p[LEGS.right.ankle]);
         return new BodyPosition(facingDirection)
-            .rightLeg(rightThigh, rightShin)
-            .leftLeg(leftThigh, leftShin);
+            .rightLeg(rightThigh, rightShin, rightLeg)
+            .leftLeg(leftThigh, leftShin, leftLeg);
     }
 
     static keypointsToDirection(p) {
@@ -254,15 +261,17 @@ export class BodyPosition {
         return { directionCorrection, facingDirection };
     }
 
-    leftLeg(thigh, shin) {
+    leftLeg(thigh, shin, leg) {
         this.leftThigh = thigh;
         this.leftShin = shin;
+        this.leftFullLeg = leg;
         return this;
     }
 
-    rightLeg(thigh, shin) {
+    rightLeg(thigh, shin, leg) {
         this.rightThigh = thigh;
         this.rightShin = shin;
+        this.rightFullLeg = leg;
         return this;
     }
 
@@ -272,6 +281,8 @@ export class BodyPosition {
         out.rightThigh = interpolate(this.rightThigh, other.rightThigh, ratio);
         out.leftShin = interpolate(this.leftShin, other.leftShin, ratio);
         out.rightShin = interpolate(this.rightShin, other.rightShin, ratio);
+        out.leftFullLeg = interpolate(this.leftFullLeg, other.leftFullLeg, ratio);
+        out.rightFullLeg = interpolate(this.rightFullLeg, other.rightFullLeg, ratio);
         return out;
     }
 
@@ -281,6 +292,8 @@ export class BodyPosition {
         out.rightThigh = this.rightThigh - other.rightThigh;
         out.leftShin = this.leftShin - other.leftShin;
         out.rightShin = this.rightShin - other.rightShin;
+        out.leftFullLeg = this.leftFullLeg - other.leftFullLeg;
+        out.rightFullLeg = this.rightFullLeg - other.rightFullLeg;
         return out;
     }
 }
@@ -296,7 +309,7 @@ function interpolate(a, b, ratio) {
  * fully define a body position.
  **/
 class NamedPosition {
-    constructor(id, name, img, leftThigh, rightThigh, leftShin, rightShin) {
+    constructor(id, name, img, leftThigh, rightThigh, leftShin, rightShin, leftFullLeg, rightFullLeg) {
         this.id = id;
         this.name = name;
         this.img = img;
@@ -305,21 +318,24 @@ class NamedPosition {
         this.rightThigh = rightThigh;
         this.leftShin = leftShin;
         this.rightShin = rightShin;
+        this.leftFullLeg = leftFullLeg;
+        this.rightFullLeg = rightFullLeg;
     }
 
-    /** Take a concrete body position and construct a template from it. */
-    static FromBodyPosWithTolerance(id, name, img, bodyPos, tolerance = 10) {
-        return new NamedPosition(
-            id,
-            name,
-            img,
-            Range.WithTolerance(bodyPos.leftThigh, tolerance),
-            Range.WithTolerance(bodyPos.rightThigh, tolerance),
-            Range.WithTolerance(bodyPos.leftShin, tolerance),
-            Range.WithTolerance(bodyPos.rightShin, tolerance),
-        );
+
+    leftLeg(thigh, shin, leg, tolerance) {
+        this.leftThigh = Range.WithTolerance(thigh, tolerance);
+        this.leftShin = Range.WithTolerance(shin, tolerance);
+        this.leftFullLeg = Range.WithTolerance(leg, tolerance);
+        return this;
     }
 
+    rightLeg(thigh, shin, leg, tolerance) {
+        this.rightThigh = Range.WithTolerance(thigh, tolerance);
+        this.rightShin = Range.WithTolerance(shin, tolerance);
+        this.rightFullLeg = Range.WithTolerance(leg, tolerance);
+        return this;
+    }
 
     /// mostly shallow copy, for example because of the included image, but ranges are copied one layer deeper
     clone() {
@@ -331,12 +347,18 @@ class NamedPosition {
             Object.assign({}, this.rightThigh),
             Object.assign({}, this.leftShin),
             Object.assign({}, this.rightShin),
+            Object.assign({}, this.leftFullLeg),
+            Object.assign({}, this.rightFullLegs),
         );
     }
 
     errorScore(bodyPos) {
-        const { leftThigh, rightThigh, leftShin, rightShin } = this.errorScores(bodyPos);
-        return leftThigh + rightThigh + leftShin + rightShin;
+        let sum = 0;
+        const scores = this.errorScores(bodyPos);
+        for (const key in scores) {
+            sum += scores[key];
+        }
+        return sum;
     }
 
     errorScores(bodyPos) {
@@ -345,6 +367,8 @@ class NamedPosition {
             rightThigh: this.rightThigh.errorScore(bodyPos.rightThigh),
             leftShin: this.leftShin.errorScore(bodyPos.leftShin),
             rightShin: this.rightShin.errorScore(bodyPos.rightShin),
+            rightFullLeg: this.rightFullLeg.errorScore(bodyPos.rightFullLeg),
+            leftFullLeg: this.leftFullLeg.errorScore(bodyPos.leftFullLeg),
         };
     }
 
@@ -354,6 +378,8 @@ class NamedPosition {
         out.rightThigh = this.rightThigh.diff(bodyPos.rightThigh);
         out.leftShin = this.leftShin.diff(bodyPos.leftShin);
         out.rightShin = this.rightShin.diff(bodyPos.rightShin);
+        out.leftFullLeg = this.leftFullLeg.diff(bodyPos.leftFullLeg);
+        out.rightFullLeg = this.rightFullLeg.diff(bodyPos.rightFullLeg);
         return out;
     }
 
@@ -400,6 +426,9 @@ class Range {
     }
 
     errorScore(actual) {
+        if (this.min <= actual && this.max >= actual) {
+            return 0;
+        }
         return Math.min(Math.pow(this.min - actual, 2), Math.pow(this.max - actual, 2));
     }
 
@@ -411,13 +440,17 @@ class Range {
     }
 }
 
+const SMALL_TOLERANCE = 5;
+const BIG_TOLERANCE = 20;
+
 export const POSITIONS = {
-    "right-up": pos("right-up", "Right Leg Up", IMAGES.between_steps, new BodyPosition().rightLeg(70, 120)),
-    "right-forward": pos("right-forward", "Right Leg Forward", IMAGES.step_wide, new BodyPosition().rightLeg(40, 40).leftLeg(-20, 0)),
-    "left-up": pos("left-up", "Left Leg Up", IMAGES.between_steps, new BodyPosition().leftLeg(70, 120)),
-    "left-forward": pos("left-forward", "Left Leg Forward", IMAGES.step_wide, new BodyPosition().rightLeg(-20, 0).leftLeg(40, 40)),
+    "right-up": pos("right-up", "Right Leg Up", IMAGES.between_steps).rightLeg(70, 120, 0, SMALL_TOLERANCE),
+    "right-forward": pos("right-forward", "Right Leg Forward", IMAGES.step_wide).rightLeg(40, 40, 10, SMALL_TOLERANCE).leftLeg(-20, 0, -30, SMALL_TOLERANCE),
+    "left-up": pos("left-up", "Left Leg Up", IMAGES.between_steps).leftLeg(70, 120, 0, SMALL_TOLERANCE),
+    "left-forward": pos("left-forward", "Left Leg Forward", IMAGES.step_wide).rightLeg(-20, 0, -30, SMALL_TOLERANCE).leftLeg(40, 40, 10, SMALL_TOLERANCE),
 }
 
-function pos(id, name, img, bodyPos) {
-    return NamedPosition.FromBodyPosWithTolerance(id, name, loadImage(img), bodyPos, 0);
+function pos(id, name, img) {
+    const zeroPos = Range.WithTolerance(0, BIG_TOLERANCE);
+    return new NamedPosition(id, name, loadImage(img), zeroPos, zeroPos, zeroPos, zeroPos, zeroPos, zeroPos);
 }
