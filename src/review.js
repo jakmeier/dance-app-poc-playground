@@ -309,7 +309,7 @@ export function computeAndShowAnyMatches(minDt, maxDt, minDtRepeat, freestyle = 
         positions = estimate.positions;
     }
     console.log("positions", positions);
-    console.log("directions", positions.map((p) => p.position.bodyPos.facingDirection));
+    console.log("directions", positions.map((p) => p.position.facingDirection));
 
     stepAnalysis(positions);
 };
@@ -330,12 +330,11 @@ function stepAnalysis(positions) {
         const p = positions[i];
         const img = p.position.img;
         const x = timestampToBannerX(p.start, POSITION_IMAGE_WIDTH);
-        // console.log("direction is", p.position.bodyPos.facingDirection);
         const newImg = document.createElement('img');
         newImg.src = img.src;
         newImg.style.left = x + 'px';
         newImg.classList.add('review-position');
-        if (isMirrored ? p.position.bodyPos.facingDirection === 'left' : p.position.bodyPos.facingDirection === 'right') {
+        if (isMirrored ? p.position.facingDirection === 'left' : p.position.facingDirection === 'right') {
             newImg.classList.add('flipped');
         }
         if (p.error > 1.0) {

@@ -29,12 +29,13 @@ function detectPositions(history, minDt, maxDt, errorThreshold = Infinity) {
     const end = history[history.length - 1].timestamp - minDt;
     for (let i = 0; i < history.length && history[i].timestamp <= end;) {
         let best = { error: Infinity, index: -1 };
-        for (const position of POSITIONS) {
-            const candidate = position.bodyPos.bestFit(history, i, minDt, maxDt);
+        for (const id in POSITIONS) {
+            const position = POSITIONS[id];
+            const candidate = position.bestFit(history, i, minDt, maxDt);
             if (candidate && candidate.error < best.error) {
                 best = candidate;
                 best.position = position.clone();
-                best.position.bodyPos.facingDirection = history[best.index].bodyPos.facingDirection;
+                best.position.facingDirection = history[best.index].bodyPos.facingDirection;
             }
         }
         if (best.index >= 0) {

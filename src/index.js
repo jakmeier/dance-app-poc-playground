@@ -294,8 +294,9 @@ document.getElementById('video-upload').onchange = function (event) {
 
         reader.onload = function (e) {
             delayToRecording = 0;
-            renderFromVideo(e.target.result);
-            document.getElementById('start-recording').onclick();
+            renderFromVideo(e.target.result).then(
+                () => document.getElementById('start-recording').onclick()
+            )
             selectTab('record');
         }.bind(this)
 

@@ -4,9 +4,9 @@ import { IMAGES, loadImage } from "./images";
 
 export class Move {
     constructor() {
-        // positions to hit on each beat
+        // [NamedPosition]
+        // positions to hit on each beat (actually beats and off-beats)
         this.onBeat = []
-        // TODO: in-between beat positions for more accuracy
     }
 
     // Good for calibration.
@@ -17,64 +17,65 @@ export class Move {
     // The classic.
     static RunningMan() {
         return new Move()
-            .then(new BodyPosition().rightLeg(40, 40).leftLeg(-20, 0))
-            .then(new BodyPosition().leftLeg(70, 120))
-            .then(new BodyPosition().rightLeg(-20, 0).leftLeg(40, 40))
-            .then(new BodyPosition().rightLeg(70, 120))
+            .then("right-forward")
+            .then("left-up")
+            .then("left-forward")
+            .then("right-up")
             ;
     }
 
     static DoubleRunningMan() {
         return new Move()
-            .then(new BodyPosition().rightLeg(40, 40).leftLeg(-20, 0))
-            .then(new BodyPosition().leftLeg(70, 120))
-            .then(new BodyPosition().rightLeg(40, 40).leftLeg(-20, 0))
-            .then(new BodyPosition().leftLeg(70, 120))
-            .then(new BodyPosition().rightLeg(-20, 0).leftLeg(40, 40))
-            .then(new BodyPosition().rightLeg(70, 120))
-            .then(new BodyPosition().rightLeg(-20, 0).leftLeg(40, 40))
-            .then(new BodyPosition().rightLeg(70, 120))
+            .then("right-forward")
+            .then("left-up")
+            .then("right-forward")
+            .then("left-up")
+            .then("left-forward")
+            .then("right-up")
+            .then("left-forward")
+            .then("right-up")
             ;
     }
 
     static ReverseRunningMan() {
         return new Move()
-            .then(new BodyPosition().rightLeg(40, 40).leftLeg(-20, 0))
-            .then(new BodyPosition().rightLeg(70, 120))
-            .then(new BodyPosition().rightLeg(-20, 0).leftLeg(40, 40))
-            .then(new BodyPosition().leftLeg(70, 120))
+            .then("right-forward")
+            .then("right-up")
+            .then("left-forward")
+            .then("left-up")
             ;
     }
 
     static DoubleTurnRunningMan() {
         return new Move()
             // normal
-            .then(new BodyPosition().rightLeg(40, 40).leftLeg(-20, 0))
-            .then(new BodyPosition().leftLeg(70, 120))
-            .then(new BodyPosition().rightLeg(-20, 0).leftLeg(40, 40))
-            .then(new BodyPosition().rightLeg(70, 120))
+            .then("right-forward")
+            .then("left-up")
+            .then("left-forward")
+            .then("right-up")
             // double
-            .then(new BodyPosition().rightLeg(-20, 0).leftLeg(40, 40))
-            .then(new BodyPosition().rightLeg(70, 120))
+            .then("left-forward")
+            .then("right-up")
             // turn
-            .then(new BodyPosition().rightLeg(40, 40).leftLeg(-20, 0))
-            .then(new BodyPosition().leftLeg(70, 120))
+            .then("right-forward")
+            .then("left-up")
             // normal  (starting left)
-            .then(new BodyPosition().rightLeg(-20, 0).leftLeg(40, 40))
-            .then(new BodyPosition().rightLeg(70, 120))
+            .then("left-forward")
+            .then("right-up")
             // double
-            .then(new BodyPosition().rightLeg(40, 40).leftLeg(-20, 0))
-            .then(new BodyPosition().leftLeg(70, 120))
-            .then(new BodyPosition().rightLeg(40, 40).leftLeg(-20, 0))
-            .then(new BodyPosition().leftLeg(70, 120))
+            .then("right-forward")
+            .then("left-up")
+            .then("right-forward")
+            .then("left-up")
             // turn
-            .then(new BodyPosition().rightLeg(-20, 0).leftLeg(40, 40))
-            .then(new BodyPosition().rightLeg(70, 120))
+            .then("left-forward")
+            .then("right-up")
             ;
     }
 
-    then(pos) {
-        this.onBeat.push(pos);
+    then(bodyPosId) {
+        const bodyPos = POSITIONS[bodyPosId];
+        this.onBeat.push(bodyPos);
         return this;
     }
 
@@ -122,8 +123,8 @@ export class Move {
             firstMaxDt *= 1.2;
         }
 
-        const firstPosition = this.onBeat[0].namedPosition();
-        firstPosition.bodyPos.facingDirection = history[first.index].bodyPos.facingDirection;
+        const firstPosition = this.onBeat[0].clone();
+        firstPosition.facingDirection = history[first.index].bodyPos.facingDirection;
         hack.push(
             {
                 start: first.start,
@@ -154,9 +155,9 @@ export class Move {
             deltas.push(next.start - prev);
             frames.push(history[next.index]);
 
-            const position = this.onBeat[beat % this.onBeat.length].namedPosition();
+            const position = this.onBeat[beat % this.onBeat.length].clone();
             // the bodyPos from above is the synthetic one, set the real direction for presentation purposes
-            position.bodyPos.facingDirection = history[next.index].bodyPos.facingDirection;
+            position.facingDirection = history[next.index].bodyPos.facingDirection;
             hack.push(
                 {
                     start: next.start,
@@ -203,6 +204,9 @@ export class Move {
 const LEGS = leg_indx();
 const SHOULDER = shoulder_indx();
 
+/**
+ * An actual position of a person
+ */
 export class BodyPosition {
     constructor(facingDirection = 'unknown') {
         // all zero means standing straight
@@ -262,20 +266,13 @@ export class BodyPosition {
         return this;
     }
 
-    errorScore(other) {
-        return Math.pow(this.leftThigh - other.leftThigh, 2)
-            + Math.pow(this.rightThigh - other.rightThigh, 2)
-            + Math.pow(this.leftShin - other.leftShin, 2)
-            + Math.pow(this.rightShin - other.rightShin, 2);
-    }
-
-    errorScores(other) {
-        return {
-            leftThigh: Math.pow(this.leftThigh - other.leftThigh, 2),
-            rightThigh: Math.pow(this.rightThigh - other.rightThigh, 2),
-            leftShin: Math.pow(this.leftShin - other.leftShin, 2),
-            rightShin: Math.pow(this.rightShin - other.rightShin, 2)
-        };
+    interpolate(other, ratio) {
+        const out = new BodyPosition(this.facingDirection);
+        out.leftThigh = interpolate(this.leftThigh, other.leftThigh, ratio);
+        out.rightThigh = interpolate(this.rightThigh, other.rightThigh, ratio);
+        out.leftShin = interpolate(this.leftShin, other.leftShin, ratio);
+        out.rightShin = interpolate(this.rightShin, other.rightShin, ratio);
+        return out;
     }
 
     diff(other) {
@@ -286,13 +283,77 @@ export class BodyPosition {
         out.rightShin = this.rightShin - other.rightShin;
         return out;
     }
+}
 
-    interpolate(other, ratio) {
-        const out = new BodyPosition(this.facingDirection);
-        out.leftThigh = interpolate(this.leftThigh, other.leftThigh, ratio);
-        out.rightThigh = interpolate(this.rightThigh, other.rightThigh, ratio);
-        out.leftShin = interpolate(this.leftShin, other.leftShin, ratio);
-        out.rightShin = interpolate(this.rightShin, other.rightShin, ratio);
+function interpolate(a, b, ratio) {
+    return a * ratio + b * (1 - ratio);
+}
+
+/** 
+ * Description of how a position *should* be.
+ *
+ * This includes range definitions, and more angles than strictly necessary to
+ * fully define a body position.
+ **/
+class NamedPosition {
+    constructor(id, name, img, leftThigh, rightThigh, leftShin, rightShin) {
+        this.id = id;
+        this.name = name;
+        this.img = img;
+
+        this.leftThigh = leftThigh;
+        this.rightThigh = rightThigh;
+        this.leftShin = leftShin;
+        this.rightShin = rightShin;
+    }
+
+    /** Take a concrete body position and construct a template from it. */
+    static FromBodyPosWithTolerance(id, name, img, bodyPos, tolerance = 10) {
+        return new NamedPosition(
+            id,
+            name,
+            img,
+            Range.WithTolerance(bodyPos.leftThigh, tolerance),
+            Range.WithTolerance(bodyPos.rightThigh, tolerance),
+            Range.WithTolerance(bodyPos.leftShin, tolerance),
+            Range.WithTolerance(bodyPos.rightShin, tolerance),
+        );
+    }
+
+
+    /// mostly shallow copy, for example because of the included image, but ranges are copied one layer deeper
+    clone() {
+        return new NamedPosition(
+            this.id,
+            this.name,
+            this.img,
+            Object.assign({}, this.leftThigh),
+            Object.assign({}, this.rightThigh),
+            Object.assign({}, this.leftShin),
+            Object.assign({}, this.rightShin),
+        );
+    }
+
+    errorScore(bodyPos) {
+        const { leftThigh, rightThigh, leftShin, rightShin } = this.errorScores(bodyPos);
+        return leftThigh + rightThigh + leftShin + rightShin;
+    }
+
+    errorScores(bodyPos) {
+        return {
+            leftThigh: this.leftThigh.errorScore(bodyPos.leftThigh),
+            rightThigh: this.rightThigh.errorScore(bodyPos.rightThigh),
+            leftShin: this.leftShin.errorScore(bodyPos.leftShin),
+            rightShin: this.rightShin.errorScore(bodyPos.rightShin),
+        };
+    }
+
+    diff(bodyPos) {
+        let out = new BodyPosition();
+        out.leftThigh = this.leftThigh.diff(bodyPos.leftThigh);
+        out.rightThigh = this.rightThigh.diff(bodyPos.rightThigh);
+        out.leftShin = this.leftShin.diff(bodyPos.leftShin);
+        out.rightShin = this.rightShin.diff(bodyPos.rightShin);
         return out;
     }
 
@@ -325,58 +386,38 @@ export class BodyPosition {
             error: smallestError,
         };
     }
+}
 
-    /**
-     * Hack to avoid merging moves_db::STEPS with how steps were defined for the tracker
-     */
-    namedPosition() {
-        if (this.rightThigh === 70 && this.rightShin === 120 && this.leftThigh === 0 && this.leftShin === 0) {
-            return POSITIONS[0].clone();
-        }
-        if (this.rightThigh === 40 && this.rightShin === 40 && this.leftThigh === -20 && this.leftShin === 0) {
-            return POSITIONS[1].clone();
-        }
-        if (this.leftThigh === 70 && this.leftShin === 120 && this.rightThigh === 0 && this.rightShin === 0) {
-            return POSITIONS[2].clone();
-        }
-        if (this.leftThigh === 40 && this.leftShin === 40 && this.rightThigh === -20 && this.rightShin === 0) {
-            return POSITIONS[3].clone();
-        }
-        console.error("body position unknown", position);
-        return null;
+/** Defines in what range a certain body part should be */
+class Range {
+    constructor(min, max) {
+        this.min = min;
+        this.max = max;
+    }
+
+    static WithTolerance(perfect, tolerance) {
+        return new Range(perfect - tolerance, perfect + tolerance);
+    }
+
+    errorScore(actual) {
+        return Math.min(Math.pow(this.min - actual, 2), Math.pow(this.max - actual, 2));
+    }
+
+    diff(actual) {
+        const smaller = this.min - actual;
+        const greater = this.max - actual;
+
+        return Math.abs(smaller) < Math.abs(greater) ? smaller : greater;
     }
 }
 
-function interpolate(a, b, ratio) {
-    return a * ratio + b * (1 - ratio);
+export const POSITIONS = {
+    "right-up": pos("right-up", "Right Leg Up", IMAGES.between_steps, new BodyPosition().rightLeg(70, 120)),
+    "right-forward": pos("right-forward", "Right Leg Forward", IMAGES.step_wide, new BodyPosition().rightLeg(40, 40).leftLeg(-20, 0)),
+    "left-up": pos("left-up", "Left Leg Up", IMAGES.between_steps, new BodyPosition().leftLeg(70, 120)),
+    "left-forward": pos("left-forward", "Left Leg Forward", IMAGES.step_wide, new BodyPosition().rightLeg(-20, 0).leftLeg(40, 40)),
 }
-
-class NamedPosition {
-    constructor(id, name, img, bodyPos) {
-        this.id = id;
-        this.name = name;
-        this.img = img;
-        this.bodyPos = bodyPos;
-    }
-
-    /// mostly shallow copy, for example because of the included image, but bodyPos is copied one layer deeper
-    clone() {
-        return new NamedPosition(
-            this.id,
-            this.name,
-            this.img,
-            Object.assign({}, this.bodyPos),
-        );
-    }
-}
-
-export const POSITIONS = [
-    pos("right-up", "Right Leg Up", IMAGES.between_steps, new BodyPosition().rightLeg(70, 120)),
-    pos("right-forward", "Right Leg Forward", IMAGES.step_wide, new BodyPosition().rightLeg(40, 40).leftLeg(-20, 0)),
-    pos("left-up", "Left Leg Up", IMAGES.between_steps, new BodyPosition().leftLeg(70, 120)),
-    pos("left-forward", "Left Leg Forward", IMAGES.step_wide, new BodyPosition().rightLeg(-20, 0).leftLeg(40, 40)),
-];
 
 function pos(id, name, img, bodyPos) {
-    return new NamedPosition(id, name, loadImage(img), bodyPos);
+    return NamedPosition.FromBodyPosWithTolerance(id, name, loadImage(img), bodyPos, 0);
 }
