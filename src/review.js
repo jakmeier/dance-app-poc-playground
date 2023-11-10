@@ -102,7 +102,7 @@ export function drawReview() {
             document.getElementById('confidence-indicator').innerHTML =
                 "confidence: " + confidenceString(frame);
 
-            reviewPositionsMarker.style.left = timestampToBannerX(frame.timestamp, POSITION_MARKER_WIDTH) + POSITION_IMAGE_WIDTH / 2 + 'px';
+            reviewPositionsMarker.style.left = timestampToBannerX(frame.timestamp, POSITION_MARKER_WIDTH) + 'px';
         }
 
     }
