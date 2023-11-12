@@ -193,6 +193,7 @@ function createReviewChart(numPositions) {
                 },
             },
             responsive: true,
+            maintainAspectRatio: false,
             scales: {
                 x: {
                     stacked: true,
