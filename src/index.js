@@ -16,7 +16,7 @@ let renderer;
 let danceTracker;
 let done = false;
 let reviewStart;
-let delayToRecording = 3000;
+let metronomeDelay = 3000;
 
 
 const selectElement = document.getElementById('step-select');
@@ -129,7 +129,7 @@ function selectTab(id) {
 function startTracker(move, bpm, beats) {
     const i = Number(songSelect.value);
     const isMetronome = i === 0;
-    const counts = isMetronome ? 4 : 0;
+    const counts = 4;
 
     danceTracker = new Tracker(move, bpm, beats, counts);
     danceTracker.onStart =
@@ -145,11 +145,12 @@ function startTracker(move, bpm, beats) {
     // () => camera.startRecording(canvas.captureStream());
 
     if (isMetronome) {
-        danceTracker.start(delayToRecording);
+        danceTracker.start(metronomeDelay);
     } else {
-        loadSong(listSongs()[i - 1].fullName).then(
+        const songMeta = listSongs()[i - 1];
+        loadSong(songMeta.fullName).then(
             (song) => {
-                danceTracker.start(delayToRecording, song);
+                danceTracker.start(0, song, songMeta);
             }
         );
     }
@@ -293,7 +294,7 @@ document.getElementById('video-upload').onchange = function (event) {
         var reader = new FileReader();
 
         reader.onload = function (e) {
-            delayToRecording = 0;
+            metronomeDelay = 0;
             renderFromVideo(e.target.result).then(
                 () => document.getElementById('start-recording').onclick()
             )

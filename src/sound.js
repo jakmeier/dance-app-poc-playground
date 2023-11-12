@@ -1,4 +1,7 @@
-const context = new AudioContext();
+/** used to play the main song */
+const songContext = new AudioContext();
+/** used to play the counts at the start and audio feedback effects */
+const effectContext = new AudioContext();
 let currentSongSource;
 
 // stores all decoded audio buffers
@@ -10,11 +13,12 @@ export const SOUNDS = {
 }
 init();
 
-export function playSound(decodedAudio) {
-    currentSongSource = context.createBufferSource();
+export function playSound(decodedAudio, isSong = false, offset = 0) {
+    const audioContext = isSong ? songContext : effectContext;
+    currentSongSource = audioContext.createBufferSource();
     currentSongSource.buffer = decodedAudio;
-    currentSongSource.connect(context.destination);
-    currentSongSource.start();
+    currentSongSource.connect(audioContext.destination);
+    currentSongSource.start(0, offset);
 }
 
 export function stopSong() {
@@ -31,45 +35,49 @@ export function playBeat(bpm, numBeats, numCounts, tracker) {
 
 function metronome(decodedAudio, dt, seconds, tracker) {
     // in seconds, usually zero
-    const startAudioTime = context.currentTime;
+    const startAudioTime = songContext.currentTime;
     // the time now in ms, for syncing with camera
     const startAbsoluteTime = new Date().getTime();
     for (let i = 0; i * dt <= seconds; i++) {
-        const source = context.createBufferSource();
+        const source = songContext.createBufferSource();
         source.buffer = decodedAudio;
-        source.connect(context.destination);
+        source.connect(songContext.destination);
         const delay = i * dt;
         source.onended = () => { tracker.beat(startAbsoluteTime + delay * 1000); };
         source.start(startAudioTime + delay);
     }
 }
 
-function playCounts(start, end, dt) {
-    const startAudioTime = context.currentTime;
+export function playCounts(start, end, dt) {
+    console.log(`playing ${start} to ${end} counts`)
+    const startAudioTime = effectContext.currentTime;
     for (let i = start - 1; i < end; i++) {
-        const source = context.createBufferSource();
+        const source = effectContext.createBufferSource();
         source.buffer = SOUNDS.numbers[i];
-        source.connect(context.destination);
+        source.connect(effectContext.destination);
         const delay = i * dt;
         source.start(startAudioTime + delay);
     }
 }
 
 async function init() {
+    effectContext.volume = 1.0;
+    songContext.volume = 0.5;
     SOUNDS.numbers = [
-        await loadSound(require("url:../assets/sound/one.mp3")),
-        await loadSound(require("url:../assets/sound/two.mp3")),
-        await loadSound(require("url:../assets/sound/three.mp3")),
-        await loadSound(require("url:../assets/sound/four.mp3")),
+        await loadSound(require("url:../assets/sound/one.mp3", false)),
+        await loadSound(require("url:../assets/sound/two.mp3", false)),
+        await loadSound(require("url:../assets/sound/three.mp3", false)),
+        await loadSound(require("url:../assets/sound/four.mp3", false)),
     ];
     SOUNDS.click =
-        await loadSound(require("url:../assets/sound/beep.mp3"));
+        await loadSound(require("url:../assets/sound/beep.mp3", true));
 }
 
-async function loadSound(url) {
+async function loadSound(url, isSong) {
+    const audioContext = isSong ? songContext : effectContext;
     return await fetch(url)
         .then(data => data.arrayBuffer())
-        .then(arrayBuffer => context.decodeAudioData(arrayBuffer))
+        .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
         .catch(onError);
 }
 
@@ -78,7 +86,7 @@ export async function loadSong(fullname) {
         SOUNDS.songs[fullname] =
             await fetch(`./assets/sound/musiclib/${fullname}`)
                 .then(data => data.arrayBuffer())
-                .then(arrayBuffer => context.decodeAudioData(arrayBuffer))
+                .then(arrayBuffer => songContext.decodeAudioData(arrayBuffer))
                 .catch(onError);
     }
     return SOUNDS.songs[fullname];

@@ -3,9 +3,7 @@ import { onBeatScore } from './rhythm';
 import { leg_indx } from './util';
 import { Chart } from 'chart.js/auto';
 import zoomPlugin from 'chartjs-plugin-zoom';
-import { playBeat, playSound } from './sound';
-
-// let lastUpdate = 0;
+import { playBeat, playSound, playCounts } from './sound';
 
 const CHART_ENABLED = false;
 const timerElement = document.getElementById('timer');
@@ -21,10 +19,20 @@ export class Tracker {
         this.onStart = () => { }
     }
 
-    start(ms, song) {
+    start(msBeforeAudio, song, songMeta) {
+        const dt = 60 / this.soundBpm;
+        let countDownStart = msBeforeAudio;
+        let countDownEnd = countDownStart + this.soundCounts * dt * 1000;
         if (song) {
-            playSound(song);
-            this.scheduleBeatCalls(ms);
+            const delay = dt * songMeta.delay * 1000;
+            countDownStart += delay;
+            countDownEnd += delay;
+            setTimeout(
+                () => playCounts(1, this.soundCounts, dt),
+                delay
+            )
+            playSound(song, true, songMeta.fastForward);
+            this.scheduleBeatCalls(countDownEnd);
             // onStart called internally
         } else {
             setTimeout(
@@ -32,14 +40,15 @@ export class Tracker {
                     playBeat(this.soundBpm, this.beatsLeft, this.soundCounts, this);
                     this.onStart();
                 },
-                ms
+                msBeforeAudio
             );
         }
-        for (let i = 0; i * 1000 <= ms; i++) {
-            const t = Math.round(ms / 1000) - i;
+        const visualCountsNum = Math.round(countDownEnd / (dt * 1000));
+        for (let t = 0; t < visualCountsNum; t++) {
+            // const t = Math.round(countDownEnd / 1000) - i;
             setTimeout(
-                () => timerElement.innerHTML = `Get Ready! (${t})`,
-                i * 1000,
+                () => timerElement.innerHTML = `Get Ready! (${visualCountsNum - t})`,
+                t * dt * 1000,
             )
         }
     }
