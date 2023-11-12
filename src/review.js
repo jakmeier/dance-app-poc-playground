@@ -170,13 +170,15 @@ function createReviewChart(numPositions) {
     // one dataset =^= one body part position error
     // labels on x-axis are positions 0 - (numPositions-1)
     const xLabels = [];
+    const data = [];
     for (let i = 0; i < numPositions; i++) {
         xLabels.push(`pos${i}`);
+        data.push(1);
     }
     const datasets =
         ["leftThigh", "rightThigh", "leftShin", "rightShin", "leftLeg", "rightLeg"]
             .map(
-                (label) => ({ label, data: [1, 1, 1, 1, 1, 1] })
+                (label) => ({ label, data: data.slice()})
             );
 
     const config = {
@@ -200,7 +202,7 @@ function createReviewChart(numPositions) {
                 },
                 y: {
                     stacked: true,
-                    suggestedMax: 40_000,
+                    suggestedMax: 25_000,
                 }
             }
         }

@@ -218,6 +218,8 @@ export class BodyPosition {
         this.rightThigh = 0;
         this.leftShin = 0;
         this.rightShin = 0;
+        this.leftFullLeg = 0;
+        this.rightFullLeg = 0;
         this.facingDirection = facingDirection;
     }
 
@@ -323,17 +325,17 @@ class NamedPosition {
     }
 
 
-    leftLeg(thigh, shin, leg, tolerance) {
-        this.leftThigh = Range.WithTolerance(thigh, tolerance);
-        this.leftShin = Range.WithTolerance(shin, tolerance);
-        this.leftFullLeg = Range.WithTolerance(leg, tolerance);
+    leftLeg(thigh, shin, leg, tolerance, thighWeight, shinWeight, legWeight) {
+        this.leftThigh = Range.WithTolerance(thigh, tolerance, thighWeight);
+        this.leftShin = Range.WithTolerance(shin, tolerance, shinWeight);
+        this.leftFullLeg = Range.WithTolerance(leg, tolerance, legWeight);
         return this;
     }
 
-    rightLeg(thigh, shin, leg, tolerance) {
-        this.rightThigh = Range.WithTolerance(thigh, tolerance);
-        this.rightShin = Range.WithTolerance(shin, tolerance);
-        this.rightFullLeg = Range.WithTolerance(leg, tolerance);
+    rightLeg(thigh, shin, leg, tolerance, thighWeight, shinWeight, legWeight) {
+        this.rightThigh = Range.WithTolerance(thigh, tolerance, thighWeight);
+        this.rightShin = Range.WithTolerance(shin, tolerance, shinWeight);
+        this.rightFullLeg = Range.WithTolerance(leg, tolerance, legWeight);
         return this;
     }
 
@@ -416,20 +418,21 @@ class NamedPosition {
 
 /** Defines in what range a certain body part should be */
 class Range {
-    constructor(min, max) {
+    constructor(min, max, weight = 1.0) {
+        this.weight = weight;
         this.min = min;
         this.max = max;
     }
 
-    static WithTolerance(perfect, tolerance) {
-        return new Range(perfect - tolerance, perfect + tolerance);
+    static WithTolerance(perfect, tolerance, weight = 1.0) {
+        return new Range(perfect - tolerance, perfect + tolerance, weight);
     }
 
     errorScore(actual) {
         if (this.min <= actual && this.max >= actual) {
             return 0;
         }
-        return Math.min(Math.pow(this.min - actual, 2), Math.pow(this.max - actual, 2));
+        return this.weight * Math.min(Math.pow(this.min - actual, 2), Math.pow(this.max - actual, 2));
     }
 
     diff(actual) {
@@ -440,14 +443,16 @@ class Range {
     }
 }
 
+const TINY_TOLERANCE = 1;
 const SMALL_TOLERANCE = 5;
-const BIG_TOLERANCE = 20;
+const MEDIUM_TOLERANCE = 10;
+const BIG_TOLERANCE = 15;
 
 export const POSITIONS = {
-    "right-up": pos("right-up", "Right Leg Up", IMAGES.between_steps).rightLeg(70, 120, 0, SMALL_TOLERANCE),
-    "right-forward": pos("right-forward", "Right Leg Forward", IMAGES.step_wide).rightLeg(40, 40, 10, SMALL_TOLERANCE).leftLeg(-20, 0, -30, SMALL_TOLERANCE),
-    "left-up": pos("left-up", "Left Leg Up", IMAGES.between_steps).leftLeg(70, 120, 0, SMALL_TOLERANCE),
-    "left-forward": pos("left-forward", "Left Leg Forward", IMAGES.step_wide).rightLeg(-20, 0, -30, SMALL_TOLERANCE).leftLeg(40, 40, 10, SMALL_TOLERANCE),
+    "right-up": pos("right-up", "Right Leg Up", IMAGES.between_steps).rightLeg(70, 100, 0, MEDIUM_TOLERANCE).leftLeg(0, 0, 0, SMALL_TOLERANCE, 0, 0, 1),
+    "right-forward": pos("right-forward", "Right Leg Forward", IMAGES.step_wide).rightLeg(40, 40, 10, TINY_TOLERANCE).leftLeg(-20, 0, -30, TINY_TOLERANCE),
+    "left-up": pos("left-up", "Left Leg Up", IMAGES.between_steps).leftLeg(70, 100, 0, MEDIUM_TOLERANCE).rightLeg(0, 0, 0, SMALL_TOLERANCE, 0, 0, 1),
+    "left-forward": pos("left-forward", "Left Leg Forward", IMAGES.step_wide).rightLeg(-20, 0, -30, TINY_TOLERANCE).leftLeg(40, 40, 10, TINY_TOLERANCE),
 }
 
 function pos(id, name, img) {
