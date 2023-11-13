@@ -6,6 +6,7 @@ export function computePositions(tracker, minDt, maxDt, minDtRepeat, freestyle =
     if (freestyle) {
         const positions = detectPositions(tracker.history, minDt, maxDt);
 
+        // de-dup
         const numBefore = positions.length;
         for (let i = positions.length - 1; i > 0; i--) {
             if (positions[i].position.id === positions[i - 1].position.id) {
@@ -34,10 +35,11 @@ export function detectPositions(history, minDt, maxDt, errorThreshold = Infinity
     const positions = [];
     const end = history[history.length - 1].timestamp - minDt;
     for (let i = 0; i < history.length && history[i].timestamp <= end;) {
+        const adaptedMinDt = i == 0 ? 0 : minDt;
         let best = { error: Infinity, index: -1 };
         for (const id in POSITIONS) {
             const position = POSITIONS[id];
-            const candidate = position.bestFit(history, i, minDt, maxDt);
+            const candidate = position.bestFit(history, i, adaptedMinDt, maxDt);
             if (candidate && candidate.error < best.error) {
                 best = candidate;
                 best.position = position.clone();
@@ -51,7 +53,7 @@ export function detectPositions(history, minDt, maxDt, errorThreshold = Infinity
             }
         } else {
             // not enough samples to find anything in the given interval
-            const fastForwardTo = history[i].timestamp + maxDt - minDt;
+            const fastForwardTo = history[i].timestamp + maxDt - adaptedMinDt;
             while (i < history.length && history[i].timestamp < fastForwardTo) {
                 i++;
             }
@@ -60,13 +62,13 @@ export function detectPositions(history, minDt, maxDt, errorThreshold = Infinity
     return positions;
 }
 
-export function detectSteps(positions) {
+export function detectSteps(positions, allowedSteps = STEPS) {
     const steps = [];
     outer_loop:
     for (let i = 0; i < positions.length;) {
         steps_loop:
-        for (const key in STEPS) {
-            const step_positions = STEPS[key];
+        for (const key in allowedSteps) {
+            const step_positions = allowedSteps[key];
             if (i + step_positions.length >= positions.length) {
                 continue;
             }
@@ -80,7 +82,7 @@ export function detectSteps(positions) {
             steps.push({
                 name: key,
                 start: positions[i].start,
-                end: positions[i + step_positions.length].start,
+                end: positions[i + step_positions.length - 1].start,
             });
             i += step_positions.length;
             continue outer_loop;

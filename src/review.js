@@ -56,7 +56,7 @@ export function setReviewVideo(videoBlob, tracker, reviewStart) {
     console.log(`${n / (t / 1000)} FPS (${n} samples in ${t}ms)`);
 }
 
-export function recordedTracker() {
+function recordedTracker() {
     return RECORDING.tracker;
 }
 

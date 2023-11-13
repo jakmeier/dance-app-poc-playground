@@ -3,10 +3,15 @@ import { signedPolarAngle, polarAngle, azimuth, assert } from './util';
 import { IMAGES, loadImage } from "./images";
 
 export class Move {
-    constructor() {
+    constructor(name = "unknown step name") {
         // [NamedPosition]
         // positions to hit on each beat (actually beats and off-beats)
-        this.onBeat = []
+        this.onBeat = [];
+        // str
+        this.name = name;
+        // { step-name: [str] }
+        this.steps = {};
+        this.steps[this.name] = [];
     }
 
     // Good for calibration.
@@ -16,7 +21,7 @@ export class Move {
 
     // The classic.
     static RunningMan() {
-        return new Move()
+        return new Move("Running Man")
             .then("right-forward")
             .then("left-up")
             .then("left-forward")
@@ -25,7 +30,7 @@ export class Move {
     }
 
     static DoubleRunningMan() {
-        return new Move()
+        return new Move("Double Running Man")
             .then("right-forward")
             .then("left-up")
             .then("right-forward")
@@ -38,7 +43,7 @@ export class Move {
     }
 
     static ReverseRunningMan() {
-        return new Move()
+        return new Move("Double Running Man")
             .then("right-forward")
             .then("right-up")
             .then("left-forward")
@@ -47,7 +52,7 @@ export class Move {
     }
 
     static DoubleTurnRunningMan() {
-        return new Move()
+        return new Move("Double Turn Running Man")
             // normal
             .then("right-forward")
             .then("left-up")
@@ -76,6 +81,7 @@ export class Move {
     then(bodyPosId) {
         const bodyPos = POSITIONS[bodyPosId];
         this.onBeat.push(bodyPos);
+        this.steps[this.name].push(bodyPosId);
         return this;
     }
 

@@ -72,9 +72,9 @@ export class Tracker {
     }
 
 
-    freezeForReview(reviewStart) {
+    freezeForReview(analysisStart) {
         let tracker = new Tracker(this.move, this.soundBpm, 0, this.soundCounts);
-        tracker.history = this.history.filter((item) => item.timestamp >= reviewStart + this.countTime());
+        tracker.history = this.history.filter((item) => item.timestamp >= analysisStart);
         return tracker;
     }
 

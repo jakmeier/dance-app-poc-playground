@@ -5,18 +5,21 @@ import { Camera } from './camera'
 import { RendererCanvas2d } from './renderer_canvas2d';
 import { I, leg_indx } from './util';
 import { Tracker } from './dance';
-import { displayPositions, displaySteps, drawReview, recordedTracker, setReviewCursor, setReviewMove, setReviewVideo } from './review';
+import { displayPositions, displaySteps, drawReview, setReviewVideo } from './review';
 import { Move } from './moves';
 import { listSongs } from './musiclib';
-import { loadSong, stopSong } from './sound';
+import { loadSong, playSuccess, stopSong } from './sound';
 import { computePositions, detectSteps } from './analyze';
 
 let camera;
 let detector;
 let renderer;
 let danceTracker;
+let recordedPositions = [];
+let recordedSteps = [];
 let done = false;
 let reviewStart;
+let analyzedUpTo = Infinity;
 let metronomeDelay = 3000;
 
 
@@ -73,14 +76,25 @@ function startRenderLoop() {
     loop();
 }
 
+let lastCheck = 0;
 async function loop() {
-    if (!done && danceTracker && danceTracker.isDone()) {
-        done = true;
-        const video = await camera.stopRecording();
-        setReviewVideo(video, danceTracker.freezeForReview(reviewStart), reviewStart);
-        showInputView();
-        // TODO: would be nice to stop camera while reviewing
-        // camera.stopCamera();
+    const now = new Date().getTime();
+    const minCheckDelay = 100;
+    if (!done && danceTracker) {
+        if (danceTracker.isDone()) {
+            done = true;
+            const video = await camera.stopRecording();
+            setReviewVideo(video, danceTracker.freezeForReview(reviewStart + danceTracker.countTime()), reviewStart);
+            showInputView();
+            // TODO: would be nice to stop camera while reviewing
+            // camera.stopCamera();
+        } else if (now > analyzedUpTo + 60_000 / danceTracker.soundBpm * 0.9 && now > lastCheck + minCheckDelay) {
+            lastCheck = now;
+            const { positions, steps } = updatePositionsAndSteps();
+            if (steps.length > 0) {
+                playSuccess();
+            }
+        }
     }
 
     if (camera.video.readyState < 2) {
@@ -128,6 +142,7 @@ function selectTab(id) {
 }
 
 function startTracker(move, bpm, beats) {
+    done = false;
     const i = Number(songSelect.value);
     const isMetronome = i === 0;
     const counts = 4;
@@ -136,6 +151,7 @@ function startTracker(move, bpm, beats) {
     danceTracker.onStart =
         () => {
             reviewStart = new Date().getTime();
+            analyzedUpTo = reviewStart + danceTracker.countTime();
             if (camera.video.srcObject) {
                 camera.startRecording(camera.video.srcObject);
             } else {
@@ -244,7 +260,16 @@ document.getElementById('show-results').onclick =
             alert("Must record first!");
             return;
         }
-        evaluateTrackedDance();
+
+        updatePositionsAndSteps();
+        if (recordedPositions.length === 0) {
+            alert("Must record at least one position!");
+            return;
+        }
+
+        displayPositions(recordedPositions);
+        displaySteps(recordedSteps);
+
         selectTab('review');
         // document.getElementById('action-generate-hits').onclick();
         // hack
@@ -273,7 +298,24 @@ songSelect.onchange = function () {
     }
 };
 
-function evaluateTrackedDance() {
+/** 
+ * Attempts to find steps in the tracked information that has not been recorded as steps, yet.
+ * The newly found steps and their positions are recorded in `recordedPositions` and `recordedSteps`.
+ * Returns the positions and steps that were added in this step.
+ */
+function updatePositionsAndSteps() {
+    const { positions, steps } = evaluateTrackedDance(analyzedUpTo);
+    if (steps.length > 0) {
+        analyzedUpTo = steps[steps.length - 1].end;
+        recordedSteps.push(...steps);
+        const stepPositions = positions.filter((pos) => pos.start <= analyzedUpTo);
+        const historyIndexOffset = recordedPositions.length;
+        recordedPositions.push(...stepPositions);
+    }
+    return { positions, steps };
+}
+
+function evaluateTrackedDance(analysisStart) {
     const freestyle = "4" === selectElement.value;
     const targetBpm = danceTracker.soundBpm;
     // bpm counts full beats, which corresponds to half speed, at full speed
@@ -281,12 +323,25 @@ function evaluateTrackedDance() {
     const factor = halfSpeedInput.checked ? 1 : 0.5;
     const dt = factor * 60000 / targetBpm;
 
-    const positions = computePositions(recordedTracker(), 0.75 * dt, 1.25 * dt, dt, freestyle);
-    if (positions) {
-        displayPositions(positions);
-        const steps = detectSteps(positions);
-        displaySteps(steps);
+    const snapshot = danceTracker.freezeForReview(analysisStart);
+    if (snapshot.history.length > 0) {
+        const positions = computePositions(snapshot, 0.75 * dt, 1.25 * dt, dt, freestyle);
+        const stepsFilter = freestyle ? undefined : danceTracker.move.steps;
+        if (positions) {
+            const steps = detectSteps(positions, stepsFilter);
+
+            // hack: ad-hock fix the indices in the positions which are relative to
+            // frozen review history, while we need it relative to when tracking
+            // starts
+            const start = reviewStart + danceTracker.countTime();
+            const end = analysisStart;
+            const historyIndexOffset = danceTracker.history.filter((el) => el.timestamp >= start && el.timestamp < end).length;
+            positions.forEach((pos) => pos.index += historyIndexOffset);
+
+            return { positions, steps };
+        }
     }
+    return { positions: [], steps: [] };
 }
 
 function showLiveRecording() {
