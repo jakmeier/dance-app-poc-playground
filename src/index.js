@@ -5,10 +5,11 @@ import { Camera } from './camera'
 import { RendererCanvas2d } from './renderer_canvas2d';
 import { I, leg_indx } from './util';
 import { Tracker } from './dance';
-import { computeAndShowAnyMatches, drawReview, setReviewCursor, setReviewMove, setReviewVideo } from './review';
+import { displayPositions, displaySteps, drawReview, recordedTracker, setReviewCursor, setReviewMove, setReviewVideo } from './review';
 import { Move } from './moves';
 import { listSongs } from './musiclib';
 import { loadSong, stopSong } from './sound';
+import { computePositions, detectSteps } from './analyze';
 
 let camera;
 let detector;
@@ -243,13 +244,7 @@ document.getElementById('show-results').onclick =
             alert("Must record first!");
             return;
         }
-        const freestyle = "4" === selectElement.value;
-        const targetBpm = danceTracker.soundBpm;
-        // bpm counts full beats, which corresponds to half speed, at full speed
-        // we track two moves per beat
-        const factor = halfSpeedInput.checked ? 1 : 0.5;
-        const dt = factor * 60_000 / targetBpm;
-        computeAndShowAnyMatches(0.75 * dt, 1.25 * dt, dt, freestyle);
+        evaluateTrackedDance();
         selectTab('review');
         // document.getElementById('action-generate-hits').onclick();
         // hack
@@ -277,6 +272,22 @@ songSelect.onchange = function () {
         bpmInput.readOnly = true;
     }
 };
+
+function evaluateTrackedDance() {
+    const freestyle = "4" === selectElement.value;
+    const targetBpm = danceTracker.soundBpm;
+    // bpm counts full beats, which corresponds to half speed, at full speed
+    // we track two moves per beat
+    const factor = halfSpeedInput.checked ? 1 : 0.5;
+    const dt = factor * 60000 / targetBpm;
+
+    const positions = computePositions(recordedTracker(), 0.75 * dt, 1.25 * dt, dt, freestyle);
+    if (positions) {
+        displayPositions(positions);
+        const steps = detectSteps(positions);
+        displaySteps(steps);
+    }
+}
 
 function showLiveRecording() {
     inputView.classList.add('hidden');

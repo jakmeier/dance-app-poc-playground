@@ -49,7 +49,6 @@ function metronome(decodedAudio, dt, seconds, tracker) {
 }
 
 export function playCounts(start, end, dt) {
-    console.log(`playing ${start} to ${end} counts`)
     const startAudioTime = effectContext.currentTime;
     for (let i = start - 1; i < end; i++) {
         const source = effectContext.createBufferSource();

@@ -108,7 +108,7 @@ export class Move {
             return;
         }
 
-        // hack to make code work with `stepAnalysis`
+        // hack to make code work with `detectSteps`
         const hack = [];
 
         // First move can have an offset between zero and a full cycle time.

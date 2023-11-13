@@ -1,7 +1,6 @@
 import { RendererCanvas2d } from "./renderer_canvas2d";
 import { Chart } from 'chart.js/auto';
 import { leg_indx } from "./util";
-import { detectPositions, detectSteps } from "./moves_db";
 import { isMirrored } from "./index";
 
 const ENABLE_COMBO_RENDERER = false;
@@ -55,6 +54,10 @@ export function setReviewVideo(videoBlob, tracker, reviewStart) {
     const n = RECORDING.history.length;
     const t = RECORDING.history[n - 1].timestamp - RECORDING.videoStart - RECORDING.videoIntroMs;
     console.log(`${n / (t / 1000)} FPS (${n} samples in ${t}ms)`);
+}
+
+export function recordedTracker() {
+    return RECORDING.tracker;
 }
 
 export function drawReview() {
@@ -178,7 +181,7 @@ function createReviewChart(numPositions) {
     const datasets =
         ["leftThigh", "rightThigh", "leftShin", "rightShin", "leftLeg", "rightLeg"]
             .map(
-                (label) => ({ label, data: data.slice()})
+                (label) => ({ label, data: data.slice() })
             );
 
     const config = {
@@ -281,46 +284,6 @@ document.getElementById('action-generate-hits').onclick =
         }
     };
 
-document.getElementById('action-generate-any-matches-slow').onclick =
-    () => computeAndShowAnyMatches(400, 900, 1000);
-document.getElementById('action-generate-any-matches-fast').onclick =
-    () => computeAndShowAnyMatches(10, 200, 500);
-
-export function computeAndShowAnyMatches(minDt, maxDt, minDtRepeat, freestyle = true) {
-    // `positions` must have { start, index, error, position { id, name, bodyPos, img } }
-    let positions;
-    if (freestyle) {
-        positions = detectPositions(RECORDING.history, minDt, maxDt);
-
-        const numBefore = positions.length;
-        for (let i = positions.length - 1; i > 0; i--) {
-            if (positions[i].position.id === positions[i - 1].position.id) {
-                if (positions[i - 1].start - positions[i].start < minDtRepeat) {
-                    if (positions[i].error > positions[i - 1].error) {
-                        positions.splice(i, 1);
-                    } else {
-                        positions.splice(i - 1, 1);
-                    }
-                }
-            }
-        }
-        const numAfter = positions.length;
-        console.log(`found ${numBefore} positions, de-deduplicated to ${numAfter}`);
-
-    } else {
-        // TODO: fix facing direction
-        const estimate = RECORDING.tracker.move.matchToRecording(RECORDING.history, minDt, maxDt);
-        // added the `positions` field just to make this work... spaghetti prototype, yay
-        positions = estimate.positions;
-    }
-    console.log("positions", positions);
-    if (positions) {
-        console.log("directions", positions.map((p) => p.position.facingDirection));
-        stepAnalysis(positions);
-    }
-
-};
-
 function timestampToBannerX(t, imageSize) {
     return (t - RECORDING.history[0].timestamp)
         / (RECORDING.history[RECORDING.history.length - 1].timestamp - RECORDING.history[0].timestamp)
@@ -328,7 +291,7 @@ function timestampToBannerX(t, imageSize) {
         - imageSize / 2;
 }
 
-function stepAnalysis(positions) {
+export function displayPositions(positions) {
     POSITIONS_BANNER_W = Math.max(POSITIONS_BANNER_W, positions.length * POSITION_IMAGE_WIDTH);
     reviewPositions.innerHTML = '';
     reviewPositions.appendChild(reviewPositionsMarker);
@@ -353,9 +316,9 @@ function stepAnalysis(positions) {
         newImg.onclick = () => setReviewCursor(i, frameTime, delta, p.error);
         reviewPositions.appendChild(newImg);
     }
+}
 
-    const steps = detectSteps(positions);
-    console.log("Steps", steps);
+export function displaySteps(steps) {
     for (step of steps) {
         const left = timestampToBannerX(step.start, 0);
         const right = timestampToBannerX(step.end, 0);
@@ -381,4 +344,26 @@ export function setReviewCursor(beat, ms, delta, error) {
     for (let i = 0; i < numSeries; i++) {
         reviewChart.data.datasets[i].borderWidth = borderWidth;
     }
+}
+
+
+function computeAndShowAnyMatches(tracker, minDt, maxDt, minDtRepeat, freestyle = true) {
+    const positions = computePositions(tracker, minDt, maxDt, minDtRepeat, freestyle);
+    console.log("positions", positions);
+    if (positions) {
+        console.log("directions", positions.map((p) => p.position.facingDirection));
+
+        displayPositions(positions);
+        const steps = detectSteps(positions);
+
+        displaySteps(steps);
+    }
+};
+
+document.onload = function () {
+
+    document.getElementById('action-generate-any-matches-slow').onclick =
+        () => computeAndShowAnyMatches(recordedTracker(), 400, 900, 1000);
+    document.getElementById(recordedTracker(), 'action-generate-any-matches-fast').onclick =
+        () => computeAndShowAnyMatches(10, 200, 500);
 }
