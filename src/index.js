@@ -21,6 +21,7 @@ let done = false;
 let reviewStart;
 let analyzedUpTo = Infinity;
 let metronomeDelay = 3000;
+let isVirtualCamera = false;
 
 
 const selectElement = document.getElementById('step-select');
@@ -59,7 +60,7 @@ async function startCameraAndLoop() {
 }
 
 async function renderFromVideo(videoUrl) {
-    camera = await Camera.setupVirtual(videoUrl);
+    camera = await Camera.setupVirtual(videoUrl, 0);
     startRenderLoop();
 }
 
@@ -145,7 +146,7 @@ function startTracker(move, bpm, beats) {
     done = false;
     const i = Number(songSelect.value);
     const isMetronome = i === 0;
-    const counts = 4;
+    const counts = isVirtualCamera ? 0 : 4;
 
     danceTracker = new Tracker(move, bpm, beats, counts);
     danceTracker.onStart =
@@ -261,12 +262,6 @@ document.getElementById('show-results').onclick =
             return;
         }
 
-        updatePositionsAndSteps();
-        if (recordedPositions.length === 0) {
-            alert("Must record at least one position!");
-            return;
-        }
-
         displayPositions(recordedPositions);
         displaySteps(recordedSteps);
 
@@ -309,7 +304,6 @@ function updatePositionsAndSteps() {
         analyzedUpTo = steps[steps.length - 1].end;
         recordedSteps.push(...steps);
         const stepPositions = positions.filter((pos) => pos.start <= analyzedUpTo);
-        const historyIndexOffset = recordedPositions.length;
         recordedPositions.push(...stepPositions);
     }
     return { positions, steps };
@@ -335,7 +329,7 @@ function evaluateTrackedDance(analysisStart) {
             // starts
             const start = reviewStart + danceTracker.countTime();
             const end = analysisStart;
-            const historyIndexOffset = danceTracker.history.filter((el) => el.timestamp >= start && el.timestamp < end).length;
+            const historyIndexOffset = danceTracker.history.filter((el) => el.timestamp >= start && el.timestamp <= end).length;
             positions.forEach((pos) => pos.index += historyIndexOffset);
 
             return { positions, steps };
@@ -361,6 +355,7 @@ document.getElementById('video-upload').onchange = function (event) {
 
         reader.onload = function (e) {
             metronomeDelay = 0;
+            isVirtualCamera = true;
             renderFromVideo(e.target.result).then(
                 () => document.getElementById('start-recording').onclick()
             )

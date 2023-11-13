@@ -27,7 +27,7 @@ export function computePositions(tracker, minDt, maxDt, minDtRepeat, freestyle =
         // TODO: fix facing direction
         const estimate = tracker.move.matchToRecording(tracker.history, minDt, maxDt);
         // added the `positions` field just to make this work... spaghetti prototype, yay
-        return estimate.positions;
+        return estimate ? estimate.positions : null;
     }
 }
 
@@ -35,7 +35,7 @@ export function detectPositions(history, minDt, maxDt, errorThreshold = Infinity
     const positions = [];
     const end = history[history.length - 1].timestamp - minDt;
     for (let i = 0; i < history.length && history[i].timestamp <= end;) {
-        const adaptedMinDt = i == 0 ? 0 : minDt;
+        const adaptedMinDt = i === 0 ? 1 : minDt;
         let best = { error: Infinity, index: -1 };
         for (const id in POSITIONS) {
             const position = POSITIONS[id];
@@ -53,7 +53,7 @@ export function detectPositions(history, minDt, maxDt, errorThreshold = Infinity
             }
         } else {
             // not enough samples to find anything in the given interval
-            const fastForwardTo = history[i].timestamp + maxDt - adaptedMinDt;
+            const fastForwardTo = history[i].timestamp + maxDt - minDt;
             while (i < history.length && history[i].timestamp < fastForwardTo) {
                 i++;
             }

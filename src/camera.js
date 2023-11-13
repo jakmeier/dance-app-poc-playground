@@ -81,7 +81,7 @@ export class Camera {
   /**
  * Initiate a Camera instance from a Video URL instead of a real camera.
  */
-  static async setupVirtual(videoUrl) {
+  static async setupVirtual(videoUrl, delay) {
     const camera = new Camera();
     camera.video.src = videoUrl;
 
@@ -91,7 +91,7 @@ export class Camera {
       };
     });
 
-    camera.video.play();
+    setTimeout(() => camera.video.play(), delay);
 
     const videoWidth = camera.video.videoWidth;
     const videoHeight = camera.video.videoHeight;

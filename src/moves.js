@@ -107,11 +107,11 @@ export class Move {
     matchToRecording(history, minDt = 190, maxDt = 1350) {
         if (history.length == 0) {
             console.warn("no positions to match to move");
-            return;
+            return null;
         }
         if (this.onBeat.length == 0) {
             console.warn("no moves to match to positions");
-            return;
+            return null;
         }
 
         // hack to make code work with `detectSteps`
@@ -130,7 +130,7 @@ export class Move {
         }
 
         if (first === null) {
-            return [];
+            return null;
         }
 
         const firstPosition = this.onBeat[0].clone();
@@ -156,9 +156,12 @@ export class Move {
         const endOfHistory = history[history.length - 1].timestamp;
         for (let beat = 1; history[i].timestamp + minDt < endOfHistory; beat++) {
             let next = null;
-            while (next === null) {
+            while (next === null && history[i].timestamp + minDt < endOfHistory) {
                 next = this.bestFit(history, i, beat, minDt, maxDt);
                 i++;
+            }
+            if (next === null) {
+                break;
             }
 
             errors.push(next.error);
@@ -395,7 +398,11 @@ class NamedPosition {
         assert(minDt <= maxDt, `${minDt} <= ${maxDt}`);
         assert(start < history.length, `${start} < ${history.length}`);
         if (history[start].timestamp + minDt > history[history.length - 1].timestamp) {
-            assert(false, "no frames after start + minDt");
+            console.log("start", start, "history.length", history.length);
+            assert(
+                false,
+                `no frames after start + minDt (${history[start].timestamp} + ${minDt} > ${history[history.length - 1].timestamp})`
+            );
         }
         let smallestError = Infinity;
         let smallestErrorIndex = null;
