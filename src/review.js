@@ -292,7 +292,7 @@ function timestampToBannerX(t, imageSize) {
 }
 
 export function displayPositions(positions) {
-    POSITIONS_BANNER_W = Math.max(POSITIONS_BANNER_W, positions.length * POSITION_IMAGE_WIDTH);
+    POSITIONS_BANNER_W = Math.max(POSITIONS_BANNER_W, positions.length * POSITION_IMAGE_WIDTH * 1.5);
     reviewPositions.innerHTML = '';
     reviewPositions.appendChild(reviewPositionsMarker);
     let prev = 0;

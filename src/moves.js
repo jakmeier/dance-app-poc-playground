@@ -124,13 +124,14 @@ export class Move {
         let first = null;
         const totalTime = history[history.length - 1].timestamp - history[0].timestamp;
         let firstMaxDt = maxDt * this.onBeat.length;
-        while (first === null && firstMaxDt < totalTime) {
+        while (first === null) {
             first = this.bestFit(history, 0, 0, 0, firstMaxDt);
+            // We'll leave the loop if we found `first`, otherwise we want to increase the search window.
+            // However, if the search window already spans the entire history, we should give up the search.
+            if(firstMaxDt > totalTime && first === null) {
+                return null;
+            }
             firstMaxDt *= 1.2;
-        }
-
-        if (first === null) {
-            return null;
         }
 
         const firstPosition = this.onBeat[0].clone();

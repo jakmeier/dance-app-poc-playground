@@ -4,7 +4,7 @@ import { STEPS, CHOREOS } from './moves_db';
 // returned value `positions` has { start, index, error, position { id, name, bodyPos, img } }
 export function computePositions(tracker, minDt, maxDt, minDtRepeat, freestyle = true) {
     if (freestyle) {
-        const positions = detectPositions(tracker.history, minDt, maxDt);
+        const positions = detectAnyPositions(tracker.history, minDt, maxDt, 5);
 
         // de-dup
         const numBefore = positions.length;
@@ -24,14 +24,14 @@ export function computePositions(tracker, minDt, maxDt, minDtRepeat, freestyle =
 
         return positions;
     } else {
-        // TODO: fix facing direction
         const estimate = tracker.move.matchToRecording(tracker.history, minDt, maxDt);
         // added the `positions` field just to make this work... spaghetti prototype, yay
         return estimate ? estimate.positions : null;
     }
 }
 
-export function detectPositions(history, minDt, maxDt, errorThreshold = Infinity) {
+/** Used in freestyle to find any position, otherwise `Move::matchToRecording` is used instead */
+export function detectAnyPositions(history, minDt, maxDt, errorThreshold = Infinity) {
     const positions = [];
     const end = history[history.length - 1].timestamp - minDt;
     for (let i = 0; i < history.length && history[i].timestamp <= end;) {
@@ -69,7 +69,7 @@ export function detectSteps(positions, allowedSteps = STEPS) {
         steps_loop:
         for (const key in allowedSteps) {
             const step_positions = allowedSteps[key];
-            if (i + step_positions.length >= positions.length) {
+            if (i + step_positions.length > positions.length) {
                 continue;
             }
             for (let j = 0; j < step_positions.length; j++) {
