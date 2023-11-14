@@ -163,12 +163,12 @@ function startTracker(move, bpm, beats) {
     // () => camera.startRecording(canvas.captureStream());
 
     if (isMetronome) {
-        danceTracker.start(metronomeDelay);
+        danceTracker.start(metronomeDelay, isVirtualCamera);
     } else {
         const songMeta = listSongs()[i - 1];
         loadSong(songMeta.fullName).then(
             (song) => {
-                danceTracker.start(0, song, songMeta);
+                danceTracker.start(0, song, songMeta, isVirtualCamera);
             }
         );
     }

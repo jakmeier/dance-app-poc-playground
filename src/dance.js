@@ -19,12 +19,12 @@ export class Tracker {
         this.onStart = () => { }
     }
 
-    start(msBeforeAudio, song, songMeta) {
+    start(msBeforeAudio, song, songMeta, isVirtualReplay = false) {
         const dt = 60 / this.soundBpm;
         let countDownStart = msBeforeAudio;
         let countDownEnd = countDownStart + this.soundCounts * dt * 1000;
         if (song) {
-            const delay = dt * songMeta.delay * 1000;
+            const delay = isVirtualReplay ? 0 : dt * songMeta.delay * 1000;
             countDownStart += delay;
             countDownEnd += delay;
             setTimeout(
