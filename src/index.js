@@ -8,7 +8,7 @@ import { Tracker } from './dance';
 import { displayPositions, displaySteps, drawReview, setReviewVideo } from './review';
 import { Move } from './moves';
 import { listSongs } from './musiclib';
-import { loadSong, playSuccess, stopSong } from './sound';
+import { loadSong, playBadStep, playSuccess, stopSong } from './sound';
 import { computePositions, detectSteps } from './analyze';
 
 let camera;
@@ -92,8 +92,20 @@ async function loop() {
         } else if (now > analyzedUpTo + 60_000 / danceTracker.soundBpm * 0.9 && now > lastCheck + minCheckDelay) {
             lastCheck = now;
             const { positions, steps } = updatePositionsAndSteps();
+            // play a sound if adding something
             if (steps.length > 0) {
-                playSuccess();
+                let error = 0;
+                positions.forEach((p) => error += p.error);
+                let score = error / positions.length;
+                // good sound if average is low
+                // TODO: the average can be confusing because it's not the same statistic as used to display stars
+                if (score < 1) {
+                    console.log("good", score);
+                    playSuccess();
+                } else {
+                    console.log("bad", score);
+                    playBadStep();
+                }
             }
         }
     }
@@ -300,7 +312,24 @@ songSelect.onchange = function () {
  */
 function updatePositionsAndSteps() {
     const { positions, steps } = evaluateTrackedDance(analyzedUpTo);
+
     if (steps.length > 0) {
+        // We got some positions and some steps, but what if the last step will improve in the next couple frames?
+        // Heuristic: if we have a perfect score already, accept it immediately, otherwise wait for some time
+        // The downside of waiting is that feedback is delayed, so we should not make it too large.
+        const minLookahead = 200;
+        const perfectScoreThreshold = 0.4;
+        const lastStep = steps[steps.length - 1];
+        const stepEnd = lastStep.end;
+        const historyEnd = danceTracker.history[danceTracker.history.length - 1].timestamp;
+        const lastError = lastStep.errors[lastStep.errors.length - 1];
+        if (lastError > perfectScoreThreshold && historyEnd < stepEnd + minLookahead) {
+            // reject the last step
+            steps.pop();
+        }
+    }
+    if (steps.length > 0) {
+        // we have at least one step we want to add
         analyzedUpTo = steps[steps.length - 1].end;
         recordedSteps.push(...steps);
         const stepPositions = positions.filter((pos) => pos.start <= analyzedUpTo);
@@ -319,7 +348,7 @@ function evaluateTrackedDance(analysisStart) {
 
     const snapshot = danceTracker.freezeForReview(analysisStart);
     if (snapshot.history.length > 0) {
-        const positions = computePositions(snapshot, 0.75 * dt, 1.25 * dt, dt, freestyle);
+        const positions = computePositions(snapshot, 0.66 * dt, 1.5 * dt, dt, freestyle);
         const stepsFilter = freestyle ? undefined : danceTracker.move.steps;
         if (positions) {
             const steps = detectSteps(positions, stepsFilter);

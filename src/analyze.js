@@ -83,6 +83,7 @@ export function detectSteps(positions, allowedSteps = STEPS) {
                 name: key,
                 start: positions[i].start,
                 end: positions[i + step_positions.length - 1].start,
+                errors: positions.slice(i, i + step_positions.length).map((p) => p.error),
             });
             i += step_positions.length;
             continue outer_loop;

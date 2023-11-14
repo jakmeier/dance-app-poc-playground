@@ -63,6 +63,11 @@ nav {
     grid-column: 1 / 3;
 }
 
+#stars {
+    grid-column: 1/3;
+    font-size: 30px;
+}
+
 #review-positions {
     position: relative;
     overflow: scroll;
@@ -94,6 +99,10 @@ nav {
     opacity: 0.2;
 }
 
+.ok {
+    opacity: 0.5;
+}
+
 .review-step {
     position: absolute;
     bottom: 0px;
@@ -104,6 +113,11 @@ nav {
     color: white;
     font-size: 20px;
     font-family: 'SimplePrintRegular', sans-serif;
+}
+
+.step-stars {
+    padding: 0;
+    margin: 0;
 }
 
 .replay-chart,

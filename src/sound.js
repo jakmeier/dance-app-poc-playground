@@ -9,6 +9,7 @@ export const SOUNDS = {
     numbers: [],
     click: null,
     success: null,
+    bad: null,
     // { name: file }, lazy loaded
     songs: {},
 }
@@ -36,6 +37,10 @@ export function playBeat(bpm, numBeats, numCounts, tracker) {
 
 export function playSuccess() {
     playSound(SOUNDS.success, false);
+}
+
+export function playBadStep() {
+    playSound(SOUNDS.bad, false);
 }
 
 function metronome(decodedAudio, dt, seconds, tracker) {
@@ -77,6 +82,8 @@ async function init() {
         await loadSound(require("url:../assets/sound/beep.mp3", true));
     SOUNDS.success =
         await loadSound(require("url:../assets/sound/success.mp3", true));
+    SOUNDS.bad =
+        await loadSound(require("url:../assets/sound/bad.mp3", true));
 }
 
 async function loadSound(url, isSong) {

@@ -8,6 +8,9 @@ const ENABLE_SKELETON_RENDERER = true;
 const POSITION_IMAGE_WIDTH = 40;
 const POSITION_MARKER_WIDTH = 5;
 
+const PERFECT_THRESHOLD = 0.5;
+const GOOD_THRESHOLD = 1.0;
+
 let POSITIONS_BANNER_W = Math.min(document.documentElement.clientWidth, 960) - POSITION_IMAGE_WIDTH / 2;
 
 const videoOutput = document.getElementById('replay-raw');
@@ -307,8 +310,10 @@ export function displayPositions(positions) {
         if (isMirrored ? p.position.facingDirection === 'left' : p.position.facingDirection === 'right') {
             newImg.classList.add('flipped');
         }
-        if (p.error > 1.0) {
+        if (p.error >= GOOD_THRESHOLD) {
             newImg.classList.add('weak');
+        } else if (p.error >= PERFECT_THRESHOLD) {
+            newImg.classList.add('ok');
         }
         const frameTime = RECORDING.videoIntroMs + RECORDING.history[p.index].timestamp - RECORDING.history[0].timestamp;
         const delta = prev ? p.start - prev : 0.0;
@@ -319,6 +324,17 @@ export function displayPositions(positions) {
 }
 
 export function displaySteps(steps) {
+    const totalStars = annotateStepsWithStars(steps);
+    let starString = "";
+    for (let i = 0; i < 5; i++) {
+        if (i < totalStars) {
+            starString += "★";
+        } else {
+            starString += "☆";
+        }
+    }
+    document.getElementById("stars").innerText = starString;
+
     for (step of steps) {
         const left = timestampToBannerX(step.start, 0);
         const right = timestampToBannerX(step.end, 0);
@@ -329,6 +345,11 @@ export function displaySteps(steps) {
         div.innerText = step.name;
         // native mouse-over
         div.title = step.name;
+        // stars as inner node
+        const stars = document.createElement('p');
+        stars.classList.add('step-stars');
+        stars.innerText = (new Array(step.stars + 1)).join('★');
+        div.appendChild(stars);
         reviewPositions.appendChild(div);
     }
 }
@@ -359,6 +380,50 @@ function computeAndShowAnyMatches(tracker, minDt, maxDt, minDtRepeat, freestyle 
         displaySteps(steps);
     }
 };
+
+function annotateStepsWithStars(steps) {
+    if (!steps || steps.length === 0) {
+        return 0;
+    }
+
+    let totalStars = 0;
+    for (step of steps) {
+        let ok = 0;
+        let perfect = 0;
+        for (e of step.errors) {
+            if (e < PERFECT_THRESHOLD) {
+                perfect++;
+            }
+            if (e < GOOD_THRESHOLD) {
+                ok++;
+            }
+        }
+        step.stars = 0;
+        const M = step.errors.length;
+        // 1st star: 50% ok
+        if (ok >= M * 0.5) {
+            step.stars++;
+        }
+        // 2nd star: 75% ok
+        if (ok >= M * 0.75) {
+            step.stars++;
+        }
+        // 3rd star: 100% ok
+        if (ok >= M) {
+            step.stars++;
+        }
+        // 4th star: 50% perfect
+        if (ok >= M && perfect >= 0.5 * M) {
+            step.stars++;
+        }
+        // 5th star: 100% perfect
+        if (perfect >= M) {
+            step.stars++;
+        }
+        totalStars += step.stars;
+    }
+    return Math.round(totalStars / steps.length);
+}
 
 document.onload = function () {
 
