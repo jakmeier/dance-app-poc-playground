@@ -186,6 +186,7 @@ function startTracker(move, bpm, beats) {
     }
 }
 
+let missedFrames = 0;
 function analyzePose(pose, timestamp) {
 
     const scoreThreshold = STATE.modelConfig.scoreThreshold || 0;
@@ -199,7 +200,14 @@ function analyzePose(pose, timestamp) {
         || p[legs.right.knee].score < scoreThreshold
         || p[legs.left.ankle].score < scoreThreshold
         || p[legs.right.ankle].score < scoreThreshold
-    ) { return }
+    ) {
+        missedFrames++;
+        if ((missedFrames % 5 === 0 && missedFrames <= 10) || missedFrames % 25 === 0 && missedFrames <= 100) {
+            console.log(`missed ${missedFrames} frames`);
+        }
+        return;
+    }
+    missedFrames = 0;
 
     if (danceTracker) {
         danceTracker.track(pose.keypoints, pose.keypoints3D, timestamp);

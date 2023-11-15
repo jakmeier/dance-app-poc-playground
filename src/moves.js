@@ -128,7 +128,7 @@ export class Move {
             first = this.bestFit(history, 0, 0, 0, firstMaxDt);
             // We'll leave the loop if we found `first`, otherwise we want to increase the search window.
             // However, if the search window already spans the entire history, we should give up the search.
-            if(firstMaxDt > totalTime && first === null) {
+            if (firstMaxDt > totalTime && first === null) {
                 return null;
             }
             firstMaxDt *= 1.2;
@@ -457,16 +457,21 @@ class Range {
     }
 }
 
-const TINY_TOLERANCE = 1;
+const TINY_TOLERANCE = 2.5;
 const SMALL_TOLERANCE = 5;
 const MEDIUM_TOLERANCE = 10;
 const BIG_TOLERANCE = 15;
+const HUGE_TOLERANCE = 20;
 
+// notes on angles:
+// For a perfect shape, thighs should go up to almost 90° in the *-up position and the shin around 130°. (The shin really depends on the thigh, though)
+// But more chill positions should also be accepted in the base RM, as I'm trying to keep this beginner friendly.
+// The tricky bit is, how to make both the "perfect" and the "chill" version work in one? For now, I'm using high tolerance and reduced wieghts for that matter.
 export const POSITIONS = {
-    "right-up": pos("right-up", "Right Leg Up", IMAGES.between_steps).rightLeg(70, 100, 0, MEDIUM_TOLERANCE).leftLeg(0, 0, 0, SMALL_TOLERANCE, 0, 0, 1),
-    "right-forward": pos("right-forward", "Right Leg Forward", IMAGES.step_wide).rightLeg(40, 40, 10, TINY_TOLERANCE).leftLeg(-20, 0, -30, TINY_TOLERANCE),
-    "left-up": pos("left-up", "Left Leg Up", IMAGES.between_steps).leftLeg(70, 100, 0, MEDIUM_TOLERANCE).rightLeg(0, 0, 0, SMALL_TOLERANCE, 0, 0, 1),
-    "left-forward": pos("left-forward", "Left Leg Forward", IMAGES.step_wide).rightLeg(-20, 0, -30, TINY_TOLERANCE).leftLeg(40, 40, 10, TINY_TOLERANCE),
+    "right-up": pos("right-up", "Right Leg Up", IMAGES.between_steps).rightLeg(70, 100, 0, HUGE_TOLERANCE, 1, 0.2, 1).leftLeg(0, 0, 0, SMALL_TOLERANCE, 0, 0, 1),
+    "right-forward": pos("right-forward", "Right Leg Forward", IMAGES.step_wide).rightLeg(40, 40, 10, TINY_TOLERANCE).leftLeg(-20, 5, -30, SMALL_TOLERANCE),
+    "left-up": pos("left-up", "Left Leg Up", IMAGES.between_steps).leftLeg(70, 100, 0, HUGE_TOLERANCE, 1, 0.2, 1).rightLeg(0, 0, 0, SMALL_TOLERANCE, 0, 0, 1),
+    "left-forward": pos("left-forward", "Left Leg Forward", IMAGES.step_wide).rightLeg(-20, 5, -30, SMALL_TOLERANCE).leftLeg(40, 40, 10, TINY_TOLERANCE),
 }
 
 function pos(id, name, img) {

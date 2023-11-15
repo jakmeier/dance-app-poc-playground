@@ -28,7 +28,13 @@ export const VIDEO_SIZE = {
 export const BLAZEPOSE_CONFIG = {
   maxPoses: 1,
   type: 'full',
-  scoreThreshold: 0.65,
+  // 0.65 sometimes misses about 20 frames when the back leg is angled in the RM => no frames for one position (tested with gray leggins)
+  // probably this would best be dynamically adjusted, i.e. decrease when frames are dropped, increase when there are plenty
+  // better accuracy could probably also be achieved with sharing information between frames (left and right leg won't suddenly switch)
+  // For now, trying very low threshold to see what even goes wrong if we use essentially all frames.
+  scoreThreshold: 0.2,
+  // used for rendering which parts are less sure
+  colorThreshold: 0.5,
   render3D: false
 };
 export const STATE = {

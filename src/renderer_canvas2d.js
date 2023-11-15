@@ -158,6 +158,11 @@ export class RendererCanvas2d {
       const circle = new Path2D();
       circle.arc(keypoint.x, keypoint.y, params.DEFAULT_RADIUS, 0, 2 * Math.PI);
       this.ctx.fill(circle);
+      if (score < params.STATE.modelConfig.colorThreshold) {
+        this.ctx.strokeStyle = "red";
+      } else {
+        this.ctx.strokeStyle = "White";
+      }
       this.ctx.stroke(circle);
     }
   }
