@@ -70,12 +70,15 @@ export function drawReview() {
     }
     lastRenderedOffset = offsetMs;
     if (RECORDING.src) {
-        const frame = currentFrameData(offsetMs);
+        const { frame, targetBodyPos } = currentFrameData(offsetMs);
         if (frame) {
             const pose = { keypoints: frame.keypoints, keypoints3D: frame.keypoints };
             if (ENABLE_SKELETON_RENDERER) {
                 skeletonRenderer.flipSkeleton = !isMirrored;
                 skeletonRenderer.draw([videoOutput, [pose]], renderVideo = false);
+                if (targetBodyPos) {
+                    skeletonRenderer.drawBodyPos(targetBodyPos, frame.keypoints);
+                }
             } else {
                 skeletonOutput.classList.add('hidden');
             }
@@ -149,25 +152,47 @@ async function refresh() {
 }
 
 function currentFrameData(offsetMs) {
+    let frame = null;
+    let targetBodyPos = null;
     if (RECORDING.history === null) {
         console.warn("no pose recorded");
-        return null;
+        return { frame, targetBodyPos };
     }
 
     const start = RECORDING.videoStart;
+    // the two loops below could be checked if binary search is faster, if I really wanted to optimize like that
     for (let i = 0; i < RECORDING.history.length; i++) {
         if (RECORDING.history[i].timestamp >= start + offsetMs) {
             if (i == 0) {
-                return RECORDING.history[i];
+                frame = RECORDING.history[i];
+                break;
             } else {
                 const diffBefore = (start + offsetMs) - RECORDING.history[i - 1].timestamp;
-                const afterBefore = RECORDING.history[i].timestamp - (start + offsetMs);
-                return diffBefore < afterBefore ? RECORDING.history[i - 1] : RECORDING.history[i];
+                const diffAfter = RECORDING.history[i].timestamp - (start + offsetMs);
+                frame = diffBefore < diffAfter ? RECORDING.history[i - 1] : RECORDING.history[i];
+                break;
             }
         }
     }
-    console.warn("no pose found");
-    return null;
+    if (RECORDING.positions) {
+        const ps = RECORDING.positions;
+        for (let i = 0; i < ps.length; i++) {
+            const p = ps[i];
+            if (RECORDING.history[p.index].timestamp >= start + offsetMs) {
+                if (i == 0) {
+                    targetBodyPos = p.position;
+                    break;
+                } else {
+                    const diffBefore = (start + offsetMs) - ps[i - 1].start;
+                    const diffAfter = p.timestamp - (start + offsetMs);
+                    targetBodyPos = diffBefore < diffAfter ? ps[i - 1].position : p.position;
+                    break;
+                }
+
+            }
+        }
+    }
+    return { frame, targetBodyPos };
 }
 
 function createReviewChart(numPositions) {
@@ -321,6 +346,7 @@ export function displayPositions(positions) {
         newImg.onclick = () => setReviewCursor(i, frameTime, delta, p.error);
         reviewPositions.appendChild(newImg);
     }
+    RECORDING.positions = positions;
 }
 
 export function displaySteps(steps) {

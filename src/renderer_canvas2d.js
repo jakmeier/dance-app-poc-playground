@@ -18,11 +18,13 @@ import * as posedetection from '@tensorflow-models/pose-detection';
 import * as scatter from 'scatter-gl';
 
 import * as params from './params';
-import { polarAngle, getKeypointIndexBySide } from './util';
+import { polarAngle, getKeypointIndexBySide, leg_indx, distance2d } from './util';
+import { BodyPosition } from './moves';
 
 // These anchor points allow the pose pointcloud to resize according to its
 // position in the input.
 const ANCHOR_POINTS = [[0, 0, 0], [0, 1, 0], [-1, 0, 0], [-1, -1, 0]];
+const I = leg_indx();
 
 // #ffffff - White
 // #800000 - Maroon
@@ -192,10 +194,7 @@ export class RendererCanvas2d {
       const scoreThreshold = params.STATE.modelConfig.scoreThreshold || 0;
 
       if (score1 >= scoreThreshold && score2 >= scoreThreshold) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(kp1.x, kp1.y);
-        this.ctx.lineTo(kp2.x, kp2.y);
-        this.ctx.stroke();
+        this.drawLine(kp1, kp2);
 
         if (this.showAngles) {
           const alpha = Math.round(polarAngle(keypoints3D[i], keypoints3D[j]));
@@ -204,5 +203,41 @@ export class RendererCanvas2d {
         }
       }
     });
+  }
+
+  /**
+   * Draw a skelton from given bodyPos instead of from keypoints, the keypoints
+   * argument is used to find hips and figure out the body part lengths
+   **/
+  drawBodyPos(bodyPos, helperKeypoints) {
+    this.ctx.save();
+    if (this.flipSkeleton) {
+      this.flip();
+    }
+    const leftHip = helperKeypoints[I.left.hip];
+    const rightHip = helperKeypoints[I.right.hip];
+    const leftThighLength = distance2d(leftHip, helperKeypoints[I.left.knee]);
+    const leftShinLength = distance2d(helperKeypoints[I.left.knee], helperKeypoints[I.left.ankle]);
+    const rightThighLength = distance2d(rightHip, helperKeypoints[I.right.knee]);
+    const rightShinLength = distance2d(helperKeypoints[I.right.knee], helperKeypoints[I.right.ankle]);
+    let { directionCorrection, facingDirection } = BodyPosition.keypointsToDirection(helperKeypoints);
+    const { left, right } = bodyPos.toKeypoints(leftHip, rightHip, leftThighLength, leftShinLength, rightThighLength, rightShinLength, directionCorrection);
+
+    this.ctx.strokeStyle = "Green";
+    this.ctx.lineWidth = params.DEFAULT_LINE_WIDTH;
+
+    this.drawLine(left.hip, left.knee);
+    this.drawLine(left.knee, left.ankle);
+    this.drawLine(right.hip, right.knee);
+    this.drawLine(right.knee, right.ankle);
+
+    this.ctx.restore();
+  }
+
+  drawLine(a, b) {
+    this.ctx.beginPath();
+    this.ctx.moveTo(a.x, a.y);
+    this.ctx.lineTo(b.x, b.y);
+    this.ctx.stroke();
   }
 }

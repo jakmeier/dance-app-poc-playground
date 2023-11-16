@@ -1,4 +1,4 @@
-import { leg_indx, shoulder_indx } from "./util";
+import { add2dVector, leg_indx, shoulder_indx } from "./util";
 import { signedPolarAngle, polarAngle, azimuth, assert } from './util';
 import { IMAGES, loadImage } from "./images";
 
@@ -355,12 +355,12 @@ class NamedPosition {
             this.id,
             this.name,
             this.img,
-            Object.assign({}, this.leftThigh),
-            Object.assign({}, this.rightThigh),
-            Object.assign({}, this.leftShin),
-            Object.assign({}, this.rightShin),
-            Object.assign({}, this.leftFullLeg),
-            Object.assign({}, this.rightFullLegs),
+            this.leftThigh.clone(),
+            this.rightThigh.clone(),
+            this.leftShin.clone(),
+            this.rightShin.clone(),
+            this.leftFullLeg.clone(),
+            this.rightFullLeg.clone(),
         );
     }
 
@@ -428,6 +428,31 @@ class NamedPosition {
             error: smallestError,
         };
     }
+
+    toKeypoints(leftHip, rightHip, leftThighLength, leftShinLength, rightThighLength, rightShinLength, directionCorrection) {
+        const leftThighAngle = this.leftThigh.center() * -directionCorrection;
+        const rightThighAngle = this.rightThigh.center() * -directionCorrection;
+        let leftShinAngle = (this.leftShin.center() + leftThighAngle) * directionCorrection;
+        let rightShinAngle = (this.rightShin.center() + rightThighAngle) * directionCorrection;
+
+        const leftKnee = add2dVector(leftHip, leftThighAngle, leftThighLength);
+        const rightKnee = add2dVector(rightHip, rightThighAngle, rightThighLength);
+        const leftAnkle = add2dVector(leftKnee, leftShinAngle, leftShinLength);
+        const rightAnkle = add2dVector(rightKnee, rightShinAngle, rightShinLength);
+
+        return {
+            left: {
+                hip: leftHip,
+                knee: leftKnee,
+                ankle: leftAnkle,
+            },
+            right: {
+                hip: rightHip,
+                knee: rightKnee,
+                ankle: rightAnkle,
+            }
+        };
+    }
 }
 
 /** Defines in what range a certain body part should be */
@@ -442,6 +467,10 @@ class Range {
         return new Range(perfect - tolerance, perfect + tolerance, weight);
     }
 
+    clone() {
+        return new Range(this.min, this.max, this.weight);
+    }
+
     errorScore(actual) {
         if (this.min <= actual && this.max >= actual) {
             return 0;
@@ -454,6 +483,10 @@ class Range {
         const greater = this.max - actual;
 
         return Math.abs(smaller) < Math.abs(greater) ? smaller : greater;
+    }
+
+    center() {
+        return (this.min + this.max) / 2;
     }
 }
 

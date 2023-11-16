@@ -97,6 +97,18 @@ export function signedPolarAngle(p0, p1) {
   return polarAngle(p0, p1) * Math.sign(p1.x - p0.x);
 }
 
+/** Vector in signed polar angle format, x is horizontal and y vertical  */
+export function add2dVector(start, alpha, length) {
+  return {
+    x: start.x + Math.sin(alpha / 180 * Math.PI) * length,
+    y: start.y + Math.cos(alpha / 180 * Math.PI) * length,
+  };
+}
+
+export function distance2d(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
 
 /**
  * Reset the target backend.
